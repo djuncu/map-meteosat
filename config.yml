@@ -1,0 +1,263 @@
+type:
+    Albedo:
+        qf_varname: Q-Flag
+        vmin: 0
+        vmax: 0.5
+        cmap: 'viridis'
+        color_under: 'lightgray'
+        color_over: 'white'
+        color_bad: null
+        qf_missing: [0b11111,0b10000000]
+        qf_results_missing: [0b00001,0b10000000]
+        scaling: 1.e-4
+        offset: 0.
+        valid_range: []
+        msg_sce: default
+        missing_data_val: -1
+        missing_q_val: -1
+        conversion:
+            factor:  null
+    ALB-Q:
+        qf_varname: null
+        vmin: null
+        vmax: null
+        cmap: null
+        color_under: null
+        color_over: null
+        color_bad: null
+        qf_missing: null
+        qf_results_missing: null
+        scaling: 1
+        offset: 0.
+        valid_range: [0, 255] 
+        msg_sce: default
+        missing_data_val: -1 
+        missing_q_val: null
+        conversion: 
+            factor: null
+    AOD-CLIM:
+        qf_varname: ''
+        vmin: 0
+        vmax: 0.6
+        cmap: 'viridis'
+        color_under: 'lightgray'
+        color_over: 'white'
+        color_bad: null
+        scaling: 1.e-4
+        offset: 0.
+        valid_range: []
+        msg_sce: CAMS-Climate
+        qf_missing: null 
+        qf_results_missing: null
+        missing_data_val: -1
+        missing_q_val: null      
+        conversion: 
+            factor: null  
+    AOD-FC:
+        qf_varname: ''
+        vmin: 0
+        vmax: 3
+        cmap: 'viridis'
+        color_under: null
+        color_over: null
+        color_bad: lightgray
+        scaling: 1.e-3
+        offset: 0.
+        valid_range: []
+        msg_sce: CAMS-Forecast
+        qf_missing: null
+        qf_results_missing: null
+        missing_data_val: -1
+        missing_q_val: null
+        conversion:
+            factor: null
+    DEM:
+        qf_varname: ''
+        vmin: -400
+        vmax: 5000
+        cmap: 'terrain'
+        color_under: null
+        color_over: null
+        color_bad: null
+        qf_missing: null 
+        qf_results_missing: null
+        scaling: 1
+        offset: 0.
+        valid_range: []
+        msg_sce: default
+        missing_data_val: -1
+        missing_q_val: -1 
+        conversion: 
+            factor: null
+    P-MSL:
+        qf_varname: ''
+        vmin: 97000
+        vmax: 105000
+        cmap: 'viridis'
+        color_under: lightgray
+        color_over: null
+        color_bad: lightgray
+        scaling: 1
+        offset: 1.e+5
+        valid_range: []
+        msg_sce: default
+        qf_missing: null
+        qf_results_missing: null
+        missing_data_val: -8000
+        missing_q_val: null
+        conversion: 
+            factor: null
+    O3-CLIM:
+        qf_varname: ''
+        vmin: 0
+        vmax: null
+        cmap: 'viridis'
+        color_under: 'lightgray'
+        color_over: 'white'
+        color_bad: null
+        scaling: 10
+        offset: 0.
+        valid_range: []
+        msg_sce: default
+        qf_missing: null 
+        qf_results_missing: null
+        missing_data_val: -1
+        missing_q_val: null      
+        conversion:
+            factor: 0.001
+            convertedUnit: atm.cm
+            defaultUnit: dobson   
+    O3-FC:
+        qf_varname: ''
+        vmin: 0
+        vmax: null
+        cmap: 'viridis'
+        color_under: null
+        color_over: null
+        color_bad: lightgray
+        scaling: 1.e-5
+        offset: 0.
+        valid_range: []
+        msg_sce: default
+        qf_missing: null
+        qf_results_missing: null
+        missing_data_val: -1
+        missing_q_val: null
+        conversion:
+            factor: 46.72
+            convertedUnit: atm.cm
+            defaultUnit: kg.m-2
+    TOA:
+        qf_varname: SZA
+        vmin: 0
+        vmax: 0.6
+        cmap: viridis
+        color_under: lightgrey
+        color_over: null
+        color_bad: 'xkcd:medium grey'
+        qf_missing: [0b10000001]
+        qf_results_missing: [0b00000001]
+        scaling: 1.e-2
+        offset: 0.
+        valid_range: 
+        - 0
+        - null
+        msg_sce: default
+        missing_data_val: -9999 
+        missing_q_val: null
+        conversion: 
+            factor: null
+            bandfactor:
+                '006': 20.76
+                '008': 23.24
+                '016': 19.85
+    TOC:
+        qf_varname: BRF_Q_Flag
+        vmin: 0
+        vmax: 1
+        cmap: viridis
+        color_under: lightgrey
+        color_over: white
+        color_bad: 'xkcd:medium grey'
+        qf_missing: [0b10000001]
+        qf_results_missing: [0b00000001]
+        scaling: 1.e-4
+        offset: 0.
+        valid_range: []
+        msg_sce: default
+        missing_data_val: .NAN 
+        missing_q_val: 999
+        conversion: 
+            factor: null
+    TOC-Q:
+        qf_varname: null
+        vmin: null
+        vmax: null
+        cmap: null
+        color_under: null
+        color_over: null
+        color_bad: null
+        qf_missing: null
+        qf_results_missing: null
+        scaling: 1
+        offset: 0.
+        valid_range: []
+        msg_sce: default
+        missing_data_val: 999 
+        missing_q_val: null
+        conversion: 
+            factor: null
+    WV:
+        qf_varname: ''
+        vmin: 0
+        vmax: null
+        cmap: 'viridis'
+        color_under: lightgray
+        color_over: null
+        color_bad: lightgray
+        scaling: 1.e-2
+        offset: 0.
+        valid_range: []
+        msg_sce: (ECMWF forecasts)
+        qf_missing: null
+        qf_results_missing: null
+        missing_data_val: -8000
+        missing_q_val: null
+        conversion: 
+            factor: null
+    Z_Age:
+        vmin: 0
+        vmax: 15
+        cmap: 'BuPu_r'
+        color_under: 'lightgray'
+        color_over: 'white'
+        color_bad: null
+        qf_missing: [0b11111,0b10000000]
+        qf_results_missing: [0b00001,0b10000000]
+        scaling: 1
+        offset: 0.      
+        valid_range:
+        - 0
+        - 60
+        msg_sce: default
+        missing_data_val: -1
+        missing_q_val: -1
+        conversion: 
+            factor: null
+    
+qf_bit_mask:
+    ocean: [0b11]
+    results_ocean: [0b00]    
+    outside_disk: [0b11]
+    results_outside_disk: [0b10]
+
+err_max_percent: 10
+
+lonfile: '/cnrm/vegeo/SAT/DATA/MSG/NRT-Operational/INPUTS/LAT-LON/MSG-Disk/HDF5_LSASAF_MSG_LON_MSG-Disk_4bytesPrecision'
+latfile: '/cnrm/vegeo/SAT/DATA/MSG/NRT-Operational/INPUTS/LAT-LON/MSG-Disk/HDF5_LSASAF_MSG_LAT_MSG-Disk_4bytesPrecision'
+
+is_iodc: None
+
+
+
+
