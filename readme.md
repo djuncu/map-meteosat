@@ -11,8 +11,8 @@ In that directory, run:
 This will create a map in png format in the specified location.
 Adjust the script to your needs.
 
-If you copied the config file and want to use your local version add the ```cfgFile``` argument to the call of mm.plot_msg_geoloc, like so:
-```mm.plot_msg_geoloc(..., cfgFile = 'config.yml', ...)```
+If you copied the config file and want to use your local version add the ```cfgFile``` argument to the call of mm.plot_msg_geoloc (within make_map_example.py), like so:
+```mm.plot_msg_geoloc(..., cfgFile = 'config.yml', ...)```, or whatever the name/location of your own config file is.
 
 Necessary parameters for all types are ```f_in_tplt``` (the data file) and ```varname``` (defining the variable to plot).
 

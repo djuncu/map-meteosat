@@ -7,10 +7,6 @@ sys.path.append('/cnrm/vegeo/juncud/codes/map_meteosat')
 
 import meteosat_map as mm
 
-#import os
-#import inspect
-#print(inspect.getfile(mm))
-
 # Path definitions for example files a number of variables (might not be up to date)
 # Albedo file
 f_alb      = '/cnrm/vegeo/juncud/examples/MDAL/HDF5_LSASAF_MSG_ALBEDO_MSG-Disk_202009040000'
