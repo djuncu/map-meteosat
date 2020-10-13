@@ -71,6 +71,42 @@ type:
         missing_q_val: null
         conversion:
             factor: null
+    CMa:
+        qf_varname: null
+        vmin: null
+        vmax: null
+        cmap: null
+        color_under: null
+        color_over: null
+        color_bad: null
+        qf_missing: null
+        qf_results_missing: null
+        scaling: 1
+        offset: 0.
+        valid_range: [] 
+        msg_sce: default
+        missing_data_val: -1 
+        missing_q_val: null
+        conversion: 
+            factor: null
+    CMa-Q:
+        qf_varname: null
+        vmin: null
+        vmax: null
+        cmap: null
+        color_under: null
+        color_over: null
+        color_bad: null
+        qf_missing: null
+        qf_results_missing: null
+        scaling: 1
+        offset: 0.
+        valid_range: [] 
+        msg_sce: default
+        missing_data_val: [] 
+        missing_q_val: null
+        conversion: 
+            factor: null
     DEM:
         qf_varname: ''
         vmin: -400

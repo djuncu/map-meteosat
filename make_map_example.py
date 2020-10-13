@@ -3,7 +3,7 @@
 import sys
 
 # add the location of the plotting codes to enable import
-sys.path.append('/cnrm/vegeo/juncud/codes/map_meteosat')
+sys.path.append('/cnrm/vegeo/SAT/CODES/internal/general/visualisation_validation_tools/map_meteosat')
 
 import meteosat_map as mm
 
@@ -29,6 +29,12 @@ f_oc_fc    = '/cnrm/vegeo/vincentch/DATA_DOC_RESULTS/2a__outputs_from_codes_for_
 # Top of atmosphere radiance and auxiliary file
 f_toa      = '/cnrm/vegeo/juncud/NO_SAVE/RAD/HDF5_006_MSG_RAD_MSG-Disk_202010061545'
 f_toa_aux  = '/cnrm/vegeo/SAT/DATA/MSG/NRT-Operational/INPUTS/ANGLES/ANG-20160911/HDF5_LSASAF_MSG_SZA_MSG-Disk_201609111215.h5'
+# cloud mask
+f_cma     = '/cnrm/vegeo/juncud/NO_SAVE/CMa/HDF5_MSG_NWC_CMa_MSG-Disk_202010121415'
+
+# output file
+f_out = '~/map_test.png'
 
 # call the plotting routine
-mm.plot_msg_geoloc(f_in_tplt=f_alb, varname = 'AL-BB-BH',  vmin='default', vmax='default', f_out_png='~/map_test.png')
+mm.plot_msg_geoloc(f_in_tplt=f_alb, varname = 'AL-BB-BH',  vmin='default',
+                   vmax='default', f_out_png=f_out)

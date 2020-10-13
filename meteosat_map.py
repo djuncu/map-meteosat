@@ -11,6 +11,7 @@ import numpy as np
 import sys
 import copy
 import yaml
+
 # add the location of the current directory into the python path 
 # so that the libs in ./src can be loaded even if the code is called from another location than its own directory
 myLibDir = os.path.dirname(os.path.realpath(__file__))
@@ -64,6 +65,10 @@ def plot_msg_geoloc(f_in_tplt="/cnrm/vegeo/SAT/DATA/MSG/Reprocessed-on-2017/MDAL
         convertUnits: True or False. Converts to alternative units, only available for O3 
         others: see in read_msg. 
     """
+    # check if input file exists
+    if not os.path.isfile(f_in_tplt):
+        raise ValueError('ERROR: Input file does not exist.')
+
 
     # load config
     if cfgFile is None:
@@ -107,6 +112,9 @@ def plot_msg_geoloc(f_in_tplt="/cnrm/vegeo/SAT/DATA/MSG/Reprocessed-on-2017/MDAL
     elif varname == 'ALB-Q':
         vartype = varname
         varname = 'Q-Flag'
+    elif varname == 'CMa-Q':
+        vartype = varname
+        varname = 'CMa_QUALITY'
     else:
         vartype = varname
 
@@ -267,7 +275,38 @@ def plot_msg_geoloc(f_in_tplt="/cnrm/vegeo/SAT/DATA/MSG/Reprocessed-on-2017/MDAL
             # we re-number a new variable with contiguous values in [0, len(value)-1] for each qflag category
             mask = np.where(da_to_plot.astype(int) & vmask[i] == val)
             qVals[mask] = i
- 
+
+        lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
+                                                         qVals, plot_xstep, plot_ystep, da_ocean)
+    elif vartype == 'CMa':
+        qVals = da_to_plot.copy().values # get the values in a numpy array. it needs the copy(), no idea why
+   #     for i,val in enumerate(value):
+   #         # we re-number a new variable with contiguous values in [0, len(value)-1] for each qflag category
+   #         mask = np.where(da_to_plot.astype(int) & vmask[i] == val)
+   #         qVals[mask] = i
+        qVals[qVals == 0] = 5
+        qVals = qVals - 1
+        lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
+                                                         qVals, plot_xstep, plot_ystep, da_ocean)
+    elif vartype == 'CMa-Q':
+        #value  = [0b000000000,0b010000000,0b100000000,0b110000000]# equiv to pvwave [  0, 128, 256, 384]
+        #vmask  = [0b110000000,0b110000000,0b110000000,0b110000000]# equiv to pvwave [384, 384, 384, 384]
+        
+        # not 100 percent sure if these are the right ones
+        print('WARNING: This is still in testing, I do not think these results
+              are correct at this time.')
+        # need to figure out what bits contain the quality information here...
+        value  = [0b000000000000, 0b001000000000, 0b010000000000,
+                  0b011000000000,
+                  0b100000000000]
+        vmask  = [0b111000000000, 0b111000000000, 0b111000000000,
+                  0b111000000000,
+                  0b111000000000]
+        qVals = da_to_plot.copy().values # get the values in a numpy array. it needs the copy(), no idea why
+        for i,val in enumerate(value):
+            # we re-number a new variable with contiguous values in [0, len(value)-1] for each qflag category
+            mask = np.where(da_to_plot.astype(int) & vmask[i] == val)
+            qVals[mask] = i
         lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
                                                          qVals, plot_xstep, plot_ystep, da_ocean)
 
@@ -332,10 +371,35 @@ def plot_msg_geoloc(f_in_tplt="/cnrm/vegeo/SAT/DATA/MSG/Reprocessed-on-2017/MDAL
         bname  = [ '......00', '...000.1', '0.00.101', '0.00.111', '0.1..1..', '1.......', '......10']
         colour = ["b", "yellow", "chartreuse", "skyblue", "silver", "r","w"]
         tick_labels = ['\n'.join([x,bname[i]]) for i,x in enumerate(fname) ] # merge fname & bname to legend each class
-        
+ 
         n_colors = len(value)
         clrmap = mcolors.ListedColormap(colour)
         plotnorm = mcolors.BoundaryNorm(np.arange(0,n_colors+1), clrmap.N)
+    elif vartype == 'CMa':
+        datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
+        titleString = f'Cloud Mask (NWC SAF, v2018)\n {datestr}'
+        fname  = ['Cloud-Free', 'Cloudy', 'Cloud Contaminated', 'Snow/Ice',
+                  'No data / undefined']
+        colour = ["dodgerblue","dimgrey","lightgrey","black","w"]
+        bname  = ['', '', '', '', '']
+        tick_labels = ['\n'.join([x,bname[i]]) for i,x in enumerate(fname) ] # merge fname & bname to legend each class
+
+        n_colors = 5
+        clrmap = mcolors.ListedColormap(colour)
+        plotnorm = mcolors.BoundaryNorm(np.arange(0,n_colors+1), clrmap.N)
+    elif vartype == 'CMa-Q':
+        datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
+        titleString = f'CMA Processing Flag (NWC SAF, v2012)\n {datestr}'
+        fname  = ['No data', 'Good Quality', 'Questionable', 'Bad',
+                  'Interpolated / reclassified']
+        colour = ["w","chartreuse","orange","red","magenta"]
+        bname  = ['...000', '...001', '...010', '...011', '...100']
+        tick_labels = ['\n'.join([x,bname[i]]) for i,x in enumerate(fname) ] # merge fname & bname to legend each class
+
+        n_colors = len(value)
+        clrmap = mcolors.ListedColormap(colour)
+        plotnorm = mcolors.BoundaryNorm(np.arange(0,n_colors+1), clrmap.N)
+
     else:
         clrmap = copy.copy(plt.get_cmap(cmap))
         if color_under is not None: clrmap.set_under(color_under) # plot data < vmin in grey.

@@ -8,7 +8,7 @@ In that directory, run:
 ```
 ./make_map_example.py
 ```
-This will create a map in png format in the specified location.
+This will create a map in png format in the specified location (specified in *make_map_example*).
 Adjust the script to your needs.
 
 If you copied the config file and want to use your local version add the ```cfgFile``` argument to the call of mm.plot_msg_geoloc (within make_map_example.py), like so:
@@ -38,6 +38,9 @@ Necessary parameters for all types are ```f_in_tplt``` (the data file) and ```va
 
 * Age of last determined Albedo value: ```varname = 'Z_Age'```
     - in Albedo file
+
+* Cloud Mask: ```varname = 'CMa'```
+    - example file name: ```'HDF5_MSG_NWC_CMa_MSG-Disk_202010121415'```
 
 * Digital Elevation Model (DEM): ```varname = 'DEM'```
     - example file name: ```'HDF5_LSASAF_USGS_DEM_MSG-Disk_201807110815'```
