@@ -1,6 +1,7 @@
 type:
     Albedo:
         qf_varname: Q-Flag
+        qlike: False
         vmin: 0
         vmax: 0.5
         cmap: 'viridis'
@@ -19,6 +20,7 @@ type:
             factor:  null
     ALB-Q:
         qf_varname: null
+        qlike: True
         vmin: null
         vmax: null
         cmap: null
@@ -37,6 +39,7 @@ type:
             factor: null
     AOD-CLIM:
         qf_varname: ''
+        qlike: False
         vmin: 0
         vmax: 0.6
         cmap: 'viridis'
@@ -55,6 +58,7 @@ type:
             factor: null  
     AOD-FC:
         qf_varname: ''
+        qlike: False
         vmin: 0
         vmax: 3
         cmap: 'viridis'
@@ -73,6 +77,7 @@ type:
             factor: null
     CMa:
         qf_varname: null
+        qlike: True
         vmin: null
         vmax: null
         cmap: null
@@ -91,6 +96,7 @@ type:
             factor: null
     CMa-Q:
         qf_varname: null
+        qlike: True
         vmin: null
         vmax: null
         cmap: null
@@ -109,6 +115,7 @@ type:
             factor: null
     DEM:
         qf_varname: ''
+        qlike: False
         vmin: -400
         vmax: 5000
         cmap: 'terrain'
@@ -127,6 +134,7 @@ type:
             factor: null
     P-MSL:
         qf_varname: ''
+        qlike: False
         vmin: 97000
         vmax: 105000
         cmap: 'viridis'
@@ -145,6 +153,7 @@ type:
             factor: null
     O3-CLIM:
         qf_varname: ''
+        qlike: False
         vmin: 0
         vmax: null
         cmap: 'viridis'
@@ -165,6 +174,7 @@ type:
             defaultUnit: dobson   
     O3-FC:
         qf_varname: ''
+        qlike: False
         vmin: 0
         vmax: null
         cmap: 'viridis'
@@ -185,6 +195,7 @@ type:
             defaultUnit: kg.m-2
     TOA:
         qf_varname: SZA
+        qlike: False
         vmin: 0
         vmax: 0.6
         cmap: viridis
@@ -207,8 +218,9 @@ type:
                 '006': 20.76
                 '008': 23.24
                 '016': 19.85
-    TOC:
+    TOC-MSG:
         qf_varname: BRF_Q_Flag
+        qlike: False
         vmin: 0
         vmax: 1
         cmap: viridis
@@ -225,8 +237,28 @@ type:
         missing_q_val: 999
         conversion: 
             factor: null
+    TOC-MTG:
+        qf_varname: BRF_Q_Flag
+        qlike: False
+        vmin: 0
+        vmax: 1
+        cmap: viridis
+        color_under: lightgrey
+        color_over: white
+        color_bad: 'xkcd:medium grey'
+        qf_missing: [0b10000001]
+        qf_results_missing: [0b00000001]
+        scaling: 1.
+        offset: 0.
+        valid_range: []
+        msg_sce: default
+        missing_data_val: 0 
+        missing_q_val: 999
+        conversion: 
+            factor: null
     TOC-Q:
         qf_varname: null
+        qlike: True
         vmin: null
         vmax: null
         cmap: null
@@ -236,7 +268,7 @@ type:
         qf_missing: null
         qf_results_missing: null
         scaling: 1
-        offset: 0.
+        offset: 0
         valid_range: []
         msg_sce: default
         missing_data_val: 999 
@@ -245,6 +277,7 @@ type:
             factor: null
     WV:
         qf_varname: ''
+        qlike: False
         vmin: 0
         vmax: null
         cmap: 'viridis'
@@ -262,6 +295,7 @@ type:
         conversion: 
             factor: null
     Z_Age:
+        qlike: True
         vmin: 0
         vmax: 15
         cmap: 'BuPu_r'
@@ -292,8 +326,9 @@ err_max_percent: 10
 lonfile: '/cnrm/vegeo/SAT/DATA/MSG/NRT-Operational/INPUTS/LAT-LON/MSG-Disk/HDF5_LSASAF_MSG_LON_MSG-Disk_4bytesPrecision'
 latfile: '/cnrm/vegeo/SAT/DATA/MSG/NRT-Operational/INPUTS/LAT-LON/MSG-Disk/HDF5_LSASAF_MSG_LAT_MSG-Disk_4bytesPrecision'
 
-is_iodc: None
+lonlatFileMtg: '/cnrm/vegeo/SAT/DATA/MTG/NO_SAVE/MTG_TESTING_2019-10-15/QUASI_STATIC/LSA_MTG_LATLON_MTG-Disk_201910090920.nc'
 
-
+logo_path_MF: None
+logo_path_SAF: None
 
 
