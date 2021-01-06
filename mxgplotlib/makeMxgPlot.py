@@ -89,7 +89,7 @@ def makeMtgPlot(da,
                 title="",is_iodc=False, add_logo=False,
                 logo_path_MF=None, logo_path_SAF = None, 
                 figsize=None,cmap='viridis', cTickLabels = None, 
-                mapLabels = False, suppressFig=False):
+                mapLabels = False, suppressFig=False, units=None):
 
     if suppressFig:
         import matplotlib
@@ -125,6 +125,8 @@ def makeMtgPlot(da,
         cb.ax.set_yticklabels(cTickLabels)
     else:
         cb = fig.colorbar(p, pad=cbPad)
+
+    cb.set_label(units)
 
     ax.coastlines()
     gl = ax.gridlines(crs=projPc, draw_labels=mapLabels)

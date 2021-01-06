@@ -205,6 +205,8 @@ def plot_msg_geoloc(f_in_tplt,
         vartype = 'CMa'
     elif varname == 'cma_quality':
         vartype = 'CMa-Q'
+    elif varname[0:3] == 'RAD':
+        vartype = 'RAD'
     else:
         vartype = varname
 
@@ -283,6 +285,9 @@ def plot_msg_geoloc(f_in_tplt,
                                                  missing=missing_data_val, meteosatGen=meteosatGen)
 
     if vartype == 'TOA':
+        if f_aux is None:
+            raise ValueError('no auxfile given')
+
         da_aux = utils_xr_process.read_one_file_meteosat(f_in_path=f_aux, varname = varname_aux,
                                                          scaling=1/100., offset=0., valid_range = [0,90], 
                                                          missing=[-20000], meteosatGen=meteosatGen)
@@ -608,6 +613,18 @@ def plot_msg_geoloc(f_in_tplt,
         titleString = f'TOA Reflectance at {dic_channels_wl[channel]}\n {datestr} {sce}'
         if f_out_png is not None and '{channel}' in f_out_png:
             f_out_png = f_out_png.replace('{channel}',channel)
+    elif vartype == 'RAD':
+        datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
+        if meteosatGen == '2':
+            channel = os.path.basename(f_in_tplt).split('HDF5_')[1].split('_')[0]
+        elif meteosatGen == '3':
+            channel = os.path.basename(f_in_tplt).split('RAD-')[1].split('_')[0]
+
+            titleString = f'Radiance at {dic_channels_wl[channel]} \n {datestr} {sce}'
+            units = 'mW m$^{-2}$ sr$^{-1}$ cm$^{-1}$'
+        if f_out_png is not None and '{channel}' in f_out_png:
+            f_out_png = f_out_png.replace('{channel}',channel)
+
 
     if meteosatGen == '2':
         if vmin == 'min': vmin = np.min(da_resamp)
@@ -629,6 +646,6 @@ def plot_msg_geoloc(f_in_tplt,
                  title=titleString,is_iodc=is_iodc, add_logo=add_logo,
                  logo_path_MF=logo_path_MF, logo_path_SAF = logo_path_SAF, 
                  figsize=figsize,cmap=clrmap, cTickLabels=tick_labels,
-                 mapLabels=maplabels, suppressFig=suppressFig)
+                 mapLabels=maplabels, suppressFig=suppressFig, units=units)
 if __name__ == '__main__':
     main()

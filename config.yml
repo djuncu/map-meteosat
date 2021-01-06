@@ -193,6 +193,25 @@ type:
             factor: 46.72
             convertedUnit: atm.cm
             defaultUnit: kg.m-2
+    RAD:
+        qf_varname: ''
+        qlike: False
+        vmin: 0
+        vmax: 20
+        cmap: Blues_r
+        color_under: lightgrey
+        color_over: null
+        color_bad: 'xkcd:medium grey'
+        qf_missing: null
+        qf_results_missing: null
+        scaling: 1
+        offset: 0.
+        valid_range: []
+        msg_sce: default
+        missing_data_val: -9999 
+        missing_q_val: null
+        conversion: 
+            factor: null
     TOA:
         qf_varname: SZA
         qlike: False
