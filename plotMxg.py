@@ -589,7 +589,8 @@ def plot_msg_geoloc(f_in_tplt,
         elif meteosatGen == '3':
             channel = os.path.basename(f_in_tplt).split('_')[-2]
         titleString = f'TOC Reflectance Factor at {dic_channels_wl[channel]}\n {datestr} {sce}'
-        if '{channel}' in f_out_png: f_out_png = f_out_png.replace('{channel}',channel)
+        if f_out_png is not None and '{channel}' in f_out_png:
+            f_out_png = f_out_png.replace('{channel}',channel)
     elif vartype == 'WV':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
         titleString = f'Water Vapour Total Column Content (kg/m2)\n{datestr} {sce}'
@@ -605,7 +606,8 @@ def plot_msg_geoloc(f_in_tplt,
     elif vartype == 'TOA':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
         titleString = f'TOA Reflectance at {dic_channels_wl[channel]}\n {datestr} {sce}'
-        if '{channel}' in f_out_png: f_out_png = f_out_png.replace('{channel}',channel)
+        if f_out_png is not None and '{channel}' in f_out_png:
+            f_out_png = f_out_png.replace('{channel}',channel)
 
     if meteosatGen == '2':
         if vmin == 'min': vmin = np.min(da_resamp)

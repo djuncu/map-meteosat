@@ -155,7 +155,7 @@ def makeMtgPlot(da,
         
     plt.axis('on')
     plt.title(title)
-    plt.subplots_adjust(right=0.85)    
+    plt.subplots_adjust(right=0.85)
     if add_logo and logo_path_MF is not None and logo_path_SAF is not None :
         my_utils_plot.add_logo_to_figure(fig,ax,xy_position_tuple=(0.15,0.1),zoom=0.12, logo_path=logo_path_MF)
         my_utils_plot.add_logo_to_figure(fig,ax,xy_position_tuple=(0.60,0.1),zoom=0.45, logo_path=logo_path_SAF)
@@ -163,8 +163,8 @@ def makeMtgPlot(da,
     if not suppressFig: plt.show()
 
     if f_out_png == None and not suppressFig: # returns the figure and the filtered dataset
-        return fig,ax
-    else: # saves the map to a png file, no info is returned
+        return fig, ax
+    elif f_out_png is not None: # saves the map to a png file, no info is returned
         f_out_png = os.path.expanduser(f_out_png)
         my_utils_plot.ensure_dir(f_out_png) 
         plt.savefig(f_out_png)
