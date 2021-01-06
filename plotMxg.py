@@ -299,9 +299,9 @@ def plot_msg_geoloc(f_in_tplt,
     if conversion_factor is not None:
         if convertUnits is True:
             da = da * conversion_factor
-            units = '(' + cfg['type'][vartype]['conversion']['convertedUnit'] + ')'
+            unitString = cfg['type'][vartype]['conversion']['convertedUnit']
         else:
-            units = '(' + cfg['type'][vartype]['conversion']['defaultUnit'] + ')'
+            unitString = cfg['type'][vartype]['conversion']['defaultUnit']
 
 
     # adding geoloc coordinates to dataset
@@ -581,12 +581,15 @@ def plot_msg_geoloc(f_in_tplt,
     if vartype == 'Albedo':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]
         titleString = varname[3:]+f' - Albedo {datestr}\n {sce}'
+        unitString = None
     elif vartype  == 'AOD-CLIM':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]
         titleString = f'AOD550 {datestr}\n {sce}'
+        unitString = None
     elif vartype  == 'AOD-FC':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
         titleString = f'AOD550 {datestr}\n {sce}'
+        unitString = None
     elif vartype == 'TOC-MSG' or vartype == 'TOC-MTG':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
         if meteosatGen == '2':
@@ -596,23 +599,29 @@ def plot_msg_geoloc(f_in_tplt,
         titleString = f'TOC Reflectance Factor at {dic_channels_wl[channel]}\n {datestr} {sce}'
         if f_out_png is not None and '{channel}' in f_out_png:
             f_out_png = f_out_png.replace('{channel}',channel)
+        unitString = None
     elif vartype == 'WV':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
         titleString = f'Water Vapour Total Column Content (kg/m2)\n{datestr} {sce}'
+        unitString = 'kg m$^{-2}$'
     elif vartype == 'MSL':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
         titleString = f'Pressure at Mean Sea Level (Pa)\n{datestr} {sce}'
+        unitString = 'Pa'
     elif vartype == 'O3-CLIM':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]
-        titleString = f'TOMS O3 clim {units}\n{datestr} {sce}'
+        titleString = f'TOMS O3 clim \n{datestr} {sce}'
+        unitString = 'kg m$^{-2}$'
     elif vartype == 'O3-FC':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
         titleString = f'ECMWF O3 forecast {units}\n{datestr} {sce}'
+        unitString = 'kg m$^{-2}$'
     elif vartype == 'TOA':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
         titleString = f'TOA Reflectance at {dic_channels_wl[channel]}\n {datestr} {sce}'
         if f_out_png is not None and '{channel}' in f_out_png:
             f_out_png = f_out_png.replace('{channel}',channel)
+        unitString = None
     elif vartype == 'RAD':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
         if meteosatGen == '2':
@@ -621,10 +630,11 @@ def plot_msg_geoloc(f_in_tplt,
             channel = os.path.basename(f_in_tplt).split('RAD-')[1].split('_')[0]
 
             titleString = f'Radiance at {dic_channels_wl[channel]} \n {datestr} {sce}'
-            units = 'mW m$^{-2}$ sr$^{-1}$ cm$^{-1}$'
+            unitString = 'mW m$^{-2}$ sr$^{-1}$ cm$^{-1}$'
         if f_out_png is not None and '{channel}' in f_out_png:
             f_out_png = f_out_png.replace('{channel}',channel)
-
+    else:
+        unitString = None
 
     if meteosatGen == '2':
         if vmin == 'min': vmin = np.min(da_resamp)
@@ -646,6 +656,6 @@ def plot_msg_geoloc(f_in_tplt,
                  title=titleString,is_iodc=is_iodc, add_logo=add_logo,
                  logo_path_MF=logo_path_MF, logo_path_SAF = logo_path_SAF, 
                  figsize=figsize,cmap=clrmap, cTickLabels=tick_labels,
-                 mapLabels=maplabels, suppressFig=suppressFig, units=units)
+                 mapLabels=maplabels, suppressFig=suppressFig, units=unitString)
 if __name__ == '__main__':
     main()
