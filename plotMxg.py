@@ -31,10 +31,10 @@ def main():
     plotExtent.add_argument('--ixmax', help='maximum plot x-extent py pixel', required='--ixmin' in sys.argv)
     plotExtent.add_argument('--iymin', help='mynimum plot y-extent py pixel', required='--iymax' in sys.argv)
     plotExtent.add_argument('--iymax', help='maximum plot y-extent py pixel', required='--iymin' in sys.argv)
-    plotExtent.add_argument('--lonmin', help='minimum plot lon. extent', required='--lonmax' in sys.argv)
-    plotExtent.add_argument('--lonmax', help='maximum plot lon. extent', required='--lonmin' in sys.argv)
-    plotExtent.add_argument('--latmin', help='minimum plot lat. extent', required='--latmax' in sys.argv)
-    plotExtent.add_argument('--latmax', help='maximum plot lat. extent', required='--latmin' in sys.argv)
+    plotExtent.add_argument('--lonmin', help='minimum plot lon. extent', type=float, required='--lonmax' in sys.argv)
+    plotExtent.add_argument('--lonmax', help='maximum plot lon. extent', type=float, required='--lonmin' in sys.argv)
+    plotExtent.add_argument('--latmin', help='minimum plot lat. extent', type=float, required='--latmax' in sys.argv)
+    plotExtent.add_argument('--latmax', help='maximum plot lat. extent', type=float, required='--latmin' in sys.argv)
     dataArgs.add_argument('--maxerr', help='None or percent value in [0 - 100]. Upper valid limit for ' + 
                         'varname_alb_err/varname_alb*100. When above the limit, the pixels in varname_alb are removed.',
                         type=int)

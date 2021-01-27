@@ -41,7 +41,7 @@ def makeMsgPlot(val, lon, lat,
     if is_iodc: central_lon = 41.5
     proj=ccrs.Geostationary(central_longitude=central_lon, satellite_height=35785831, false_easting=0, false_northing=0, globe=None)
     ax = plt.axes(projection=proj)    
-
+    
     # plot dataset on the projection based on values of lon/lat (which are given in ccrs.PlateCarree() projection)
     if norm is None:
         p = ax.pcolormesh(lon, lat, val,transform=ccrs.PlateCarree(), vmin=vmin, vmax=vmax, cmap = cmap)
@@ -62,6 +62,7 @@ def makeMsgPlot(val, lon, lat,
     gl.ylocator = mticker.FixedLocator([-75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75]) 
     if lonmin is not None and latmin is not None and lonmax is not None and latmax is not None:
         try:
+            print('Setting plot extent')
             ax.set_extent([lonmin, lonmax, latmin, latmax], crs=ccrs.PlateCarree())
         except Exception as e:
             print(e)
