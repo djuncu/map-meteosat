@@ -71,19 +71,24 @@ def main():
         raise ValueError('ERROR: Input file does not exist.')
 
     if args['list'] == True:
-        from netCDF4 import Dataset
-
-        fileContent = Dataset(args['file'])
-        print('File contains the following variables:')
-        for var in fileContent.variables:
-            if var != 'x' and var != 'y' and var != 'time' and var != 'geostationary': print(var)
-        sys.exit()
+        if args['gen'] == '3':
+            from netCDF4 import Dataset
+            fileContent = Dataset(args['file'])
+            print('File contains the following variables:')
+            for var in fileContent.variables:
+                if var != 'x' and var != 'y' and var != 'time' and var != 'geostationary': print(var)
+            sys.exit()
+        elif args['gen'] == '2':
+            import h5py
+            fileContent = h5py.File(args['file'],'r')
+            print('File contains the following variables:')
+            for var in fileContent.keys():
+                if var != 'x' and var != 'y' and var != 'time' and var != 'geostationary': print(var)
+            sys.exit()
 
     
-    if args['vmin'] == None: args['vmin'] = 'min'
-    if args['vmax'] == None: args['vmax'] = 'max'
 
-    plot_msg_geoloc(f_in_tplt=args['file'], varname=args['var'], cfgFile = args['config'], 
+    plot_mxg_geoloc(f_in_tplt=args['file'], varname=args['var'], cfgFile = args['config'], 
                         plot_xstep=args['stride'], plot_ystep=args['stride'], 
                         ixmin=args['ixmin'], ixmax=args['ixmax'], iymin=args['iymin'], iymax=args['iymax'], 
                         lonmin=args['lonmin'], lonmax=args['lonmax'], latmin=args['latmin'], latmax=args['latmax'],
@@ -98,7 +103,7 @@ def main():
                         f_aux = args['auxfile'], meteosatGen = args['gen'], suppressFig = args['suppressfig'])
 
 
-def plot_msg_geoloc(f_in_tplt,
+def plot_mxg_geoloc(f_in_tplt,
                         varname, cfgFile = None, 
                         plot_xstep=10, plot_ystep=10, 
                         ixmin=None, ixmax=None, iymin=None, iymax=None, 
@@ -138,8 +143,13 @@ def plot_msg_geoloc(f_in_tplt,
         convertUnits: True or False. Converts to alternative units, only available for O3 
         others: see in read_msg. 
     """
+    #import time
+    #start_time = time.process_time()
     import matplotlib.pyplot as plt
     import matplotlib.colors as mcolors
+    #from matplotlib import pyplot as plt
+    #from matplotlib import colors as mcolors
+    #print(f'{time.process_time() - start_time:.2f} seconds')
     import numpy as np
     import copy
     import yaml
@@ -178,7 +188,7 @@ def plot_msg_geoloc(f_in_tplt,
     elif varname == 'WV':
         vartype = varname
         varname = 'TCWV'
-    elif varname == 'TCWV':
+    elif varname.upper() == 'TCWV':
         vartype = 'WV'
     elif varname == 'O3-CLIM':
         vartype = varname
@@ -188,7 +198,7 @@ def plot_msg_geoloc(f_in_tplt,
     elif varname == 'O3-FC':
         vartype = varname
         varname = 'TCO3'
-    elif varname == 'TCO3':
+    elif varname.upper() == 'TCO3':
         vartype = 'O3-FC'
     elif varname == 'TOA':
         vartype = varname
@@ -196,6 +206,8 @@ def plot_msg_geoloc(f_in_tplt,
     elif varname == 'TOC-Q':
         vartype = varname
         varname = 'BRF_Q_Flag'
+    elif varname == 'BRF_Q_Flag':
+        vartype = 'TOC-Q'
     elif varname == 'ALB-Q':
         vartype = varname
         varname = 'Q-Flag'
@@ -207,6 +219,12 @@ def plot_msg_geoloc(f_in_tplt,
         vartype = 'CMa-Q'
     elif varname[0:3] == 'RAD':
         vartype = 'RAD'
+    elif varname == 'VAA' or varname == 'VZA':
+        vartype = 'VA'
+    elif varname == 'SAA' or varname == 'SZA':
+        vartype = 'SA'
+    elif varname == 'msl':
+        vartype = 'MSL'
     else:
         vartype = varname
 
@@ -215,9 +233,14 @@ def plot_msg_geoloc(f_in_tplt,
         lonfile = cfg['lonfile']
         latfile = cfg['latfile']
     
-    scaling     = cfg['type'][vartype]['scaling']
-    offset      = cfg['type'][vartype]['offset']
-    valid_range = cfg['type'][vartype]['valid_range']
+    if meteosatGen == '2':
+        scaling     = cfg['type'][vartype]['scaling']
+        offset      = cfg['type'][vartype]['offset']
+        valid_range = cfg['type'][vartype]['valid_range']
+    elif meteosatGen == '3':
+        scaling = 1.
+        offset  = 0.
+        valid_range = []
 
     varname_aux = cfg['type'][vartype]['qf_varname']
     qf_bit_mask_missing    = cfg['type'][vartype]['qf_missing']
@@ -253,9 +276,19 @@ def plot_msg_geoloc(f_in_tplt,
 
     conversion_factor = cfg['type'][vartype]['conversion']['factor']
 
+    if vmin == None:
+        if vartype == 'DEM':
+            vmin = cfg['type'][vartype]['vmin']
+        else:
+            vmin = 'min'
+    if vmax == None:
+        if vartype == 'DEM':
+            vmax = cfg['type'][vartype]['vmax']
+        else:
+            vmax = 'max'
+
     if qlike and vmin == 'min': vmin = cfg['type'][vartype]['vmin']
     if qlike and vmin == 'max': vmax = cfg['type'][vartype]['vmax']
-
 
     if vmin    == 'default': vmin = cfg['type'][vartype]['vmin']  
     if vmax    == 'default': vmax = cfg['type'][vartype]['vmax']  
@@ -277,7 +310,6 @@ def plot_msg_geoloc(f_in_tplt,
     #    date = os.path.basename(f_in_tplt).split(split_str)[1].split('_')[0][0:12]
     #elif meteosatGen == '3':
     #    date = os.path.basename
- 
     da = utils_xr_process.read_one_file_meteosat(f_in_path=f_in_tplt, varname =
                                                  varname, scaling=scaling,
                                                  offset=offset, valid_range =
@@ -464,6 +496,9 @@ def plot_msg_geoloc(f_in_tplt,
                                                          da_to_plot, plot_xstep, plot_ystep, da_ocean)
     ## Plotting
     # channel dictionary
+    titleString = None
+    dateStr = None
+    unitString = None
     dic_channels_wl = {#'006':'0.6µm','008':'0.8µm','016':'1.6µm', 
                        **dict.fromkeys(['006','VIS06'], '0.6µm'),
                        **dict.fromkeys(['008','VIS08'], '0.8µm'),
@@ -472,7 +507,7 @@ def plot_msg_geoloc(f_in_tplt,
 
     if msg_sce == 'default':
         if vartype == 'Albedo' or vartype == 'Z_Age':
-            sce = ' / '+da.attrs['SATELLITE'][0].astype(str)+'-SEVIRI'
+            sce = da.attrs['SATELLITE'][0].astype(str)+'-SEVIRI'
         else:
             sce = ''
     else:
@@ -596,17 +631,20 @@ def plot_msg_geoloc(f_in_tplt,
             channel = os.path.basename(f_in_tplt).split('-BRF')[0].split('_')[-1]
         elif meteosatGen == '3':
             channel = os.path.basename(f_in_tplt).split('_')[-2]
-        titleString = f'TOC Reflectance Factor at {dic_channels_wl[channel]}\n {datestr} {sce}'
+        try:
+            titleString = f'TOC Reflectance Factor at {dic_channels_wl[channel]}\n {datestr} {sce}'
+        except:
+            titleString = f'TOC Reflectance Factor\n {datestr} {sce}'
         if f_out_png is not None and '{channel}' in f_out_png:
             f_out_png = f_out_png.replace('{channel}',channel)
         unitString = None
     elif vartype == 'WV':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
-        titleString = f'Water Vapour Total Column Content (kg/m2)\n{datestr} {sce}'
+        titleString = f'Water Vapour Total Column Content\n{datestr} {sce}'
         unitString = 'kg m$^{-2}$'
     elif vartype == 'MSL':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
-        titleString = f'Pressure at Mean Sea Level (Pa)\n{datestr} {sce}'
+        titleString = f'Pressure at Mean Sea Level\n{datestr} {sce}'
         unitString = 'Pa'
     elif vartype == 'O3-CLIM':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]
@@ -614,7 +652,7 @@ def plot_msg_geoloc(f_in_tplt,
         unitString = 'kg m$^{-2}$'
     elif vartype == 'O3-FC':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
-        titleString = f'ECMWF O3 forecast {units}\n{datestr} {sce}'
+        titleString = f'ECMWF O3 forecast \n{datestr} {sce}'
         unitString = 'kg m$^{-2}$'
     elif vartype == 'TOA':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
@@ -630,11 +668,24 @@ def plot_msg_geoloc(f_in_tplt,
             channel = os.path.basename(f_in_tplt).split('RAD-')[1].split('_')[0]
 
             titleString = f'Radiance at {dic_channels_wl[channel]} \n {datestr} {sce}'
-            unitString = 'mW m$^{-2}$ sr$^{-1}$ cm$^{-1}$'
+            unitString = 'mW m$^{-2}$ sr$^{-1}$ cm'
         if f_out_png is not None and '{channel}' in f_out_png:
             f_out_png = f_out_png.replace('{channel}',channel)
-    else:
-        unitString = None
+    elif vartype == 'VA':
+        datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
+        if varname == 'VAA':
+            titleString = f'Viewing Azimuth Angle\n{datestr} {sce}'
+        elif varname == 'VZA':
+            titleString = f'Viewing Zenith Angle\n{datestr} {sce}'
+
+        unitString = 'degrees'
+    elif vartype == 'SA':
+        datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
+        if varname == 'SAA':
+            titleString = f'Solar Azimuth Angle\n{datestr} {sce}'
+        elif varname == 'SZA':
+            titleString = f'Solar Zenith Angle\n{datestr} {sce}'
+        unitString = 'degrees'
 
     if meteosatGen == '2':
         if vmin == 'min': vmin = np.min(da_resamp)

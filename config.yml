@@ -132,7 +132,7 @@ type:
         missing_q_val: -1 
         conversion: 
             factor: null
-    P-MSL:
+    MSL:
         qf_varname: ''
         qlike: False
         vmin: 97000
@@ -209,6 +209,21 @@ type:
         valid_range: []
         msg_sce: default
         missing_data_val: -9999 
+        missing_q_val: null
+        conversion: 
+            factor: null
+    SA:
+        qf_varname: ''
+        qlike: False
+        cmap: 'viridis'
+        color_under: lightgray
+        color_over: null
+        color_bad: lightgray
+        offset: 0.
+        msg_sce: ''
+        qf_missing: null
+        qf_results_missing: null
+        missing_data_val: -8000
         missing_q_val: null
         conversion: 
             factor: null
@@ -291,6 +306,21 @@ type:
         valid_range: []
         msg_sce: default
         missing_data_val: 999 
+        missing_q_val: null
+        conversion: 
+            factor: null
+    VA:
+        qf_varname: ''
+        qlike: False
+        cmap: 'viridis'
+        color_under: lightgray
+        color_over: null
+        color_bad: lightgray
+        offset: 0.
+        msg_sce: ''
+        qf_missing: null
+        qf_results_missing: null
+        missing_data_val: -8000
         missing_q_val: null
         conversion: 
             factor: null

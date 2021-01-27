@@ -39,8 +39,15 @@ def read_one_file_meteosat(f_in_path, varname, scaling, offset=0., valid_range =
         da = da.assign_attrs(inFile.attrs)
         inFile.close()
     elif meteosatGen == '3':
-        da = xr.open_dataset(f)
-        da[varname] = apply_scaling_offset_missing(da[varname], scaling=scaling,offset=offset, valid_range = valid_range, missing=missing)
+        da = xr.open_dataset(f, mask_and_scale=True)
+        if 'valid_range' in da[varname].attrs:
+            valid_range = da[varname].attrs.get('valid_range')
+
+        da[varname] = apply_scaling_offset_missing(da[varname],
+                                                   scaling=scaling,
+                                                   offset=offset,
+                                                   valid_range= valid_range,
+                                                   missing=missing)
         da[varname] = da[varname].squeeze()
         if da[varname].dims[0] != 'y':
             da[varname] = da[varname].rename({da[varname].dims[0]:'y', da[varname].dims[1]:'x'})
