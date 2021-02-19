@@ -27,10 +27,10 @@ def main():
     optionalArgs.add_argument('-s','--stride', help='plot only every nth pixel (default=10)', default = 10, type=int)
     fileNames.add_argument('-c', '--config', help='name of config file')
     plotLayout.add_argument('--figsize', help='figure width, height in inches', nargs = 2, type=float, metavar = ('WIDTH','HEIGHT'))
-    plotExtent.add_argument('--ixmin', help='minimum plot x-extent py pixel', required='--ixmax' in sys.argv)
-    plotExtent.add_argument('--ixmax', help='maximum plot x-extent py pixel', required='--ixmin' in sys.argv)
-    plotExtent.add_argument('--iymin', help='mynimum plot y-extent py pixel', required='--iymax' in sys.argv)
-    plotExtent.add_argument('--iymax', help='maximum plot y-extent py pixel', required='--iymin' in sys.argv)
+    plotExtent.add_argument('--ixmin', help='minimum plot x-extent py pixel', type=int, required='--ixmax' in sys.argv)
+    plotExtent.add_argument('--ixmax', help='maximum plot x-extent py pixel', type=int, required='--ixmin' in sys.argv)
+    plotExtent.add_argument('--iymin', help='mynimum plot y-extent py pixel', type=int, required='--iymax' in sys.argv)
+    plotExtent.add_argument('--iymax', help='maximum plot y-extent py pixel', type=int, required='--iymin' in sys.argv)
     plotExtent.add_argument('--lonmin', help='minimum plot lon. extent', type=float, required='--lonmax' in sys.argv)
     plotExtent.add_argument('--lonmax', help='maximum plot lon. extent', type=float, required='--lonmin' in sys.argv)
     plotExtent.add_argument('--latmin', help='minimum plot lat. extent', type=float, required='--latmax' in sys.argv)
@@ -59,6 +59,8 @@ def main():
     plotColors.add_argument('--color_over', help='color for values over vmax', default='default', metavar='COLOR')
     plotColors.add_argument('--color_bad', help='color for bad values', default='default', metavar='COLOR')
     plotLayout.add_argument('--maplabels', help='activate coordinate labels on map', action='store_true')
+    plotLayout.add_argument('--lonlinelocs', help='which longitude lines to draw', nargs='+', default = [], type=float)
+    plotLayout.add_argument('--latlinelocs', help='which latitude line to draw', nargs='+', default =[], type=float)
     dataArgs.add_argument('--convert_units', help='converts to alternative units, only available for O3',
                         action='store_true')
     fileNames.add_argument('--auxfile', help='auxiliary file for TOA, needed for conversion from radiance to reflectance')
@@ -97,7 +99,8 @@ def main():
                         f_out_png=args['outfile'], qf_to_drop = args['qf_to_drop'],
                         msg_sce=args['msg_sce'],is_iodc=args['is_iodc'], 
                         read_version=args['read_version'], add_logo=args['add_logo'], figsize= args['figsize'],
-                        cmap=args['cmap'], maplabels=args['maplabels'],
+                        cmap=args['cmap'], maplabels=args['maplabels'], 
+                        latlinelocs = args['latlinelocs'], lonlinelocs = args['lonlinelocs'],
                         color_under=args['color_under'], color_over=args['color_over'], color_bad=args['color_bad'],
                         convertUnits = args['convert_units'],
                         f_aux = args['auxfile'], meteosatGen = args['gen'], suppressFig = args['suppressfig'])
@@ -113,7 +116,7 @@ def plot_mxg_geoloc(f_in_tplt,
                         f_out_png=None, qf_to_drop = [],
                         msg_sce='default',is_iodc=False, 
                         read_version=False, add_logo=False, figsize= None,
-                        cmap='default', maplabels=False, 
+                        cmap='default', maplabels=False, lonlinelocs=[], latlinelocs=[],
                         color_under = 'default', color_over = 'default', color_bad = 'default',
                         convertUnits = False,
                         f_aux = None, meteosatGen = '2', suppressFig = False):
@@ -316,6 +319,24 @@ def plot_mxg_geoloc(f_in_tplt,
                                                  valid_range,
                                                  missing=missing_data_val, meteosatGen=meteosatGen)
 
+    # adding geoloc coordinates to dataset
+    if meteosatGen == '2':
+        if not is_iodc:
+            lonval, latval = rebuild_lonlat.read_msg_lonlats(fillvalue_to_nan=False,latfile=latfile,lonfile=lonfile)
+        else:
+            lonval, latval = rebuild_lonlat.read_msg_iodc_lonlats(fillvalue_to_nan=False,latfile=latfile,lonfile=lonfile)
+ 
+    if lonmin is not None and latmin is not None and lonmax is not None and latmax is not None:
+        if meteosatGen == '3':
+            lonval, latval = rebuild_lonlat.read_mtg_lonlats(cfg['lonlatFileMtg'])
+
+        ixmin, ixmax, iymin, iymax = my_utils_plot.lonlat2indexLims(lonval, latval,
+                                                      lonmin, lonmax, latmin, latmax)
+
+    da_to_plot = da.isel(x=slice(ixmin,ixmax,plot_xstep),y=slice(iymin,iymax,plot_ystep))
+    #da_to_plot = da_to_plot.fillna(-1)#.astype(np.float32)
+    
+
     if vartype == 'TOA':
         if f_aux is None:
             raise ValueError('no auxfile given')
@@ -324,9 +345,10 @@ def plot_mxg_geoloc(f_in_tplt,
                                                          scaling=1/100., offset=0., valid_range = [0,90], 
                                                          missing=[-20000], meteosatGen=meteosatGen)
 
+        da_aux = da_aux.isel(x=slice(ixmin,ixmax,plot_xstep),y=slice(iymin,iymax,plot_ystep))
         # radiance to reflectance conversion
         channel = os.path.basename(f_in_tplt).split('HDF5_')[1].split('_')[0]
-        da = da / (cfg['type'][vartype]['conversion']['bandfactor'][channel] * np.cos(da_aux *np.pi/180.) )
+        da_to_plot = da_to_plot / (cfg['type'][vartype]['conversion']['bandfactor'][channel] * np.cos(da_aux *np.pi/180.) )
 
     if conversion_factor is not None:
         if convertUnits is True:
@@ -336,15 +358,6 @@ def plot_mxg_geoloc(f_in_tplt,
             unitString = cfg['type'][vartype]['conversion']['defaultUnit']
 
 
-    # adding geoloc coordinates to dataset
-    if meteosatGen == '2':
-        if not is_iodc:
-            lonval, latval = rebuild_lonlat.read_msg_lonlats(fillvalue_to_nan=False,latfile=latfile,lonfile=lonfile)
-        else:
-            lonval, latval = rebuild_lonlat.read_msg_iodc_lonlats(fillvalue_to_nan=False,latfile=latfile,lonfile=lonfile)
- 
-    da_to_plot = da.isel(x=slice(ixmin,ixmax,plot_xstep),y=slice(iymin,iymax,plot_ystep))
-    #da_to_plot = da_to_plot.fillna(-1)#.astype(np.float32)
 
     # reading processing version from the product attributes
     if read_version: version_id = str(ascii(da_to_plot.attrs['PRODUCT_ALGORITHM_VERSION'])[2:-1])
@@ -418,7 +431,8 @@ def plot_mxg_geoloc(f_in_tplt,
 
         if meteosatGen == '2':
             lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
-                                                         qVals, plot_xstep, plot_ystep, da_ocean)
+                                                         qVals, plot_xstep, plot_ystep, 
+                                                         ixmin, ixmax, iymin, iymax, da_ocean)
         elif meteosatGen == '3':
             da_to_plot.values = qVals
 
@@ -435,7 +449,8 @@ def plot_mxg_geoloc(f_in_tplt,
 
         if meteosatGen == '2':
             lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
-                                                         qVals, plot_xstep, plot_ystep, da_ocean)
+                                                         qVals, plot_xstep, plot_ystep,
+                                                         ixmin, ixmax, iymin, iymax, da_ocean)
         elif meteosatGen == '3':
             da_to_plot.values = qVals
     
@@ -449,7 +464,8 @@ def plot_mxg_geoloc(f_in_tplt,
         qVals = qVals - 1
         
         lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval, qVals, 
-                                                                       plot_xstep, plot_ystep, da_ocean)
+                                                                       plot_xstep, plot_ystep,
+                                                                       ixmin, ixmax, iymin, iymax, da_ocean)
     elif vartype == 'CMa-Q' and meteosatGen == '2':
         #value  = [0b000000000,0b010000000,0b100000000,0b110000000]# equiv to pvwave [  0, 128, 256, 384]
         #vmask  = [0b110000000,0b110000000,0b110000000,0b110000000]# equiv to pvwave [384, 384, 384, 384]
@@ -475,7 +491,8 @@ def plot_mxg_geoloc(f_in_tplt,
         
         
         lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
-                                                         qVals, plot_xstep, plot_ystep, da_ocean)
+                                                         qVals, plot_xstep, plot_ystep, 
+                                                         ixmin, ixmax, iymin, iymax, da_ocean)
 
     elif vartype == 'CMa-Q' and meteosatGen == '3':
         
@@ -493,7 +510,8 @@ def plot_mxg_geoloc(f_in_tplt,
     
     elif meteosatGen == '2':
         lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
-                                                         da_to_plot, plot_xstep, plot_ystep, da_ocean)
+                                                         da_to_plot, plot_xstep, plot_ystep, 
+                                                         ixmin, ixmax, iymin, iymax, da_ocean)
     ## Plotting
     # channel dictionary
     titleString = None
@@ -697,7 +715,8 @@ def plot_mxg_geoloc(f_in_tplt,
                 vmin=vmin, vmax=vmax, norm=plotnorm, f_out_png=f_out_png,
                 title=titleString, is_iodc=is_iodc, add_logo=add_logo,
                 logo_path_MF=logo_path_MF, logo_path_SAF = logo_path_SAF, 
-                figsize=figsize, cmap=clrmap, tick_labels=tick_labels, suppressFig=suppressFig)
+                figsize=figsize, cmap=clrmap, tick_labels=tick_labels, suppressFig=suppressFig,
+                mapLabels=maplabels, lonlinelocs=lonlinelocs, latlinelocs=latlinelocs)
     elif meteosatGen == '3':
         if vmin == 'min': vmin = np.min(da_to_plot)
         if vmax == 'max': vmax = np.max(da_to_plot)
@@ -707,6 +726,7 @@ def plot_mxg_geoloc(f_in_tplt,
                  title=titleString,is_iodc=is_iodc, add_logo=add_logo,
                  logo_path_MF=logo_path_MF, logo_path_SAF = logo_path_SAF, 
                  figsize=figsize,cmap=clrmap, cTickLabels=tick_labels,
-                 mapLabels=maplabels, suppressFig=suppressFig, units=unitString)
+                 mapLabels=maplabels, suppressFig=suppressFig, units=unitString,
+                 lonlinelocs=lonlinelocs, latlinelocs=latlinelocs)
 if __name__ == '__main__':
     main()

@@ -53,33 +53,33 @@ def rebuild_lon_lat_vgt(ds, zone):
         lat_yf=-50
         lat_y0=0
     dlon = (lon_xf - lon_x0)/(x_size - 1)
-    dlat = (lat_yf - lat_y0)/(y_size - 1)       
+    dlat = (lat_yf - lat_y0)/(y_size - 1)
     lons = np.arange(lon_x0, lon_xf+dlon,dlon)
-    lats = np.arange(lat_y0, lat_yf+dlat,dlat)    
+    lats = np.arange(lat_y0, lat_yf+dlat,dlat)
     print('dlon: ', dlon,'\n dlat: ', dlat)
     print('len(lons): ', len(lons),'\n len(lats): ', len(lats))
-    print('lons: ', lons,'\n lats: ', lats)    
+    print('lons: ', lons,'\n lats: ', lats)
     # check size and end limits
     if len(lons) != x_size: print('ERROR on lons size')
     if len(lats) != y_size: print('ERROR on lats size')
-    if lons[-1] != lon_xf: 
+    if lons[-1] != lon_xf:
         if abs(lons[-1] - lon_xf) < abs(dlon/2):
             lons[-1] = lon_xf # avoid rounding issues
         else:
             print('Error in lons computation')
-    if lats[-1] != lat_yf: 
+    if lats[-1] != lat_yf:
         if abs(lats[-1] - lat_yf ) < abs(dlat/2):
             lats[-1] = lat_yf # avoid rounding issues
         else:
             print('Error in lats computation')
-    
+
     # replace x & y dims by lons,lats and assign values in corresponding coordinate
     ds.rename({'x':'lon','y':'lat'}, inplace=True)
     ds.coords['lon'] = xr.DataArray(lons, dims='lon')
     ds.coords['lat'] = xr.DataArray(lats, dims='lat')
     return ds
 
-def read_msg_lonlats(fillvalue_to_nan=True, 
+def read_msg_lonlats(fillvalue_to_nan=True,
                      latfile='/cnrm/vegeo/SAT/DATA/MSG/NRT-Operational/INPUTS/LAT-LON/MSG-Disk/HDF5_LSASAF_MSG_LAT_MSG-Disk_4bytesPrecision',
                      lonfile='/cnrm/vegeo/SAT/DATA/MSG/NRT-Operational/INPUTS/LAT-LON/MSG-Disk/HDF5_LSASAF_MSG_LON_MSG-Disk_4bytesPrecision'):
     latmsg=h5py.File(latfile,'r')
@@ -87,7 +87,7 @@ def read_msg_lonlats(fillvalue_to_nan=True,
     latmsg.close()
     latval=np.array(latval,dtype='float')
     latval=latval*0.0001
-    if fillvalue_to_nan: 
+    if fillvalue_to_nan:
         latval[latval==91]=np.nan
     else:
         latval[latval==91]=1e5
@@ -97,13 +97,13 @@ def read_msg_lonlats(fillvalue_to_nan=True,
     lonmsg.close()
     lonval=np.array(lonval,dtype='float')
     lonval=lonval*0.0001
-    if fillvalue_to_nan: 
+    if fillvalue_to_nan:
         lonval[lonval==91]=np.nan
     else:
         lonval[lonval==91]=1e5
-    
-    # replace negative longitudes 
-    lonval[lonval<0.] = 360. + lonval[lonval<0.]	    
+
+    # replace negative longitudes
+    #lonval[lonval<0.] = 360. + lonval[lonval<0.]
 
     return lonval, latval
 
@@ -111,14 +111,12 @@ def read_msg_lonlats(fillvalue_to_nan=True,
 def read_mtg_lonlats(lonlatfile='/cnrm/vegeo/SAT/DATA/MTG/NO_SAVE/MTG_TESTING_2019-10-15/QUASI_STATIC/LSA_MTG_LATLON_MTG-Disk_201910090920.nc'):
     ds=xr.open_dataset(lonlatfile, decode_cf = False)
     latval=ds['LAT'].values
-    latval = latval*0.0001
+    latval = latval*ds['LAT'].attrs['scale_factor']
     lonval=ds['LON'].values
-    lonval = lonval*0.0001
-    ds.close()   
+    lonval = lonval*ds['LON'].attrs['scale_factor']
 
-    # replace negative longitudes 
-    lonval[lonval<0.] = 360. + lonval[lonval<0.]	    
-
+    # replace negative longitudes
+    #lonval[lonval<0.] = 360. + lonval[lonval<0.]
 
     return lonval, latval
 
@@ -136,7 +134,7 @@ def read_msg_iodc_lonlats(fillvalue_to_nan=True, latfile='/cnrm/vegeo/SAT/DATA/M
     lonmsg.close()
     lonval=np.array(lonval,dtype='float')
     if fillvalue_to_nan: lonval[lonval==9100]=np.nan
-    lonval=lonval*0.01    
+    lonval=lonval*0.01
     return lonval, latval
 
 
@@ -168,24 +166,24 @@ def rebuild_lon_lat_modis(ds):
     lat_yf=-90-dlat/2
     lat_y0=90+dlat/2
     lons = np.arange(lon_x0, lon_xf+dlon, dlon)
-    lats = np.arange(lat_y0, lat_yf+dlat, dlat)    
+    lats = np.arange(lat_y0, lat_yf+dlat, dlat)
     print('dlon: ', dlon,'\n dlat: ', dlat)
     print('len(lons): ', len(lons),'\n len(lats): ', len(lats))
-    print('lons: ', lons,'\n lats: ', lats)    
+    print('lons: ', lons,'\n lats: ', lats)
     # check size and end limits
     if len(lons) != x_size: print('ERROR on lons size')
     if len(lats) != y_size: print('ERROR on lats size')
-    if lons[-1] != lon_xf: 
+    if lons[-1] != lon_xf:
         if abs(lons[-1] - lon_xf) < abs(dlon/2):
             lons[-1] = lon_xf # avoid rounding issues
         else:
             print('Error in lons computation')
-    if lats[-1] != lat_yf: 
+    if lats[-1] != lat_yf:
         if abs(lats[-1] - lat_yf ) < abs(dlat/2):
             lats[-1] = lat_yf # avoid rounding issues
         else:
             print('Error in lats computation')
-    
+
     # replace x & y dims by lons,lats and assign values in corresponding coordinate
     ds.rename({'x':'lon','y':'lat'}, inplace=True)
     ds.coords['lon'] = xr.DataArray(lons, dims='lon')
@@ -202,14 +200,14 @@ def rebuild_lon_lat_metop(ds):
     lons, lats = np.meshgrid(lon,lat)
     lats_sinu = lats
     lons_sinu = lons/np.cos(np.deg2rad(lats))
-    
+
     #ds.rename({'y':'lat'}, inplace=True)
     ds.coords['iy'] = ds.coords['y']
     ds.coords['ix'] = ds.coords['x']
-    
+
     ds.coords['y'] = xr.DataArray(lat, name='y',dims=('y'))
 
-    
+
     da = xr.DataArray(lons_sinu, name='lon',dims=('y','x'))
     da = da.chunk(chunks={'x':3000,'y':3001}) # chunk defines tiles size for parallelisation of processing & file writing
     ds.coords['lon2D'] = da.astype(np.float32) # set datatype as float 32 istead of default float 64
