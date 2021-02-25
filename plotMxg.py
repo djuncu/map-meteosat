@@ -22,6 +22,9 @@ def main():
     requiredArgs.add_argument('-V','--var', help='variable to plot', required='--list' not in sys.argv and '-l' not in sys.argv)
     optionalArgs.add_argument('-h', '--help', action='help', help='show this help message and exit')
     optionalArgs.add_argument('-l','--list', help='list variables in File and exit', action='store_true')
+    optionalArgs.add_argument('-E','--extract', help='extract values at certain point and exit', action='store_true')
+    optionalArgs.add_argument('--ex', help='extraction x index', type=int, required='--extract')
+    optionalArgs.add_argument('--ey', help='extraction y index', type=int, required='--extract')
     optionalArgs.add_argument('-G','--gen', help='Meteosat Generation number (default="3")', default='3', choices=['2','3'])
     optionalArgs.add_argument('-S','--suppressfig', help='suppress opening a figure', action='store_true')
     optionalArgs.add_argument('-s','--stride', help='plot only every nth pixel (default=10)', default = 10, type=int)
@@ -88,7 +91,12 @@ def main():
                 if var != 'x' and var != 'y' and var != 'time' and var != 'geostationary': print(var)
             sys.exit()
 
-    
+    if args['extract'] == True:
+        if args['gen'] == '3':
+            import xarray as xr
+            print(f'Value at y/lat: {args["ey"]} and x/lon: {args["ex"]}')
+            print(xr.open_dataset(args['file'])[args['var']].values.squeeze()[args['ey'],args['ex']])
+            sys.exit()
 
     plot_mxg_geoloc(f_in_tplt=args['file'], varname=args['var'], cfgFile = args['config'], 
                         plot_xstep=args['stride'], plot_ystep=args['stride'], 
