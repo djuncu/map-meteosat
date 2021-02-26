@@ -12,19 +12,21 @@ def main():
     # parse command line arguments
     parser = argparse.ArgumentParser(description='Plot Meteosat datasets.', add_help=False)
     requiredArgs = parser.add_argument_group('required arguments')
+    extractArgs = parser.add_argument_group('Extract information and exit')
     optionalArgs = parser.add_argument_group('optional arguments')
     plotExtent = parser.add_argument_group('(optional) plot extent')
     plotLayout = parser.add_argument_group('(optional) plot title & layout')
     plotColors = parser.add_argument_group('(optional) color scale')
     dataArgs   = parser.add_argument_group('(optional) data modifiers')
     fileNames  = parser.add_argument_group('(optional) files')
-    parser.add_argument('file', type=str, help='Input file name')
-    requiredArgs.add_argument('-V','--var', help='variable to plot', required='--list' not in sys.argv and '-l' not in sys.argv)
+    parser.add_argument('file', type=str, help='Input file name', nargs='?')
+    requiredArgs.add_argument('-V','--var', help='variable to plot', required='--list' not in sys.argv and '-l' not in sys.argv and '--getcoords' not in sys.argv)
     optionalArgs.add_argument('-h', '--help', action='help', help='show this help message and exit')
-    optionalArgs.add_argument('-l','--list', help='list variables in File and exit', action='store_true')
-    optionalArgs.add_argument('-E','--extract', help='extract values at certain point and exit', action='store_true')
-    optionalArgs.add_argument('--ex', help='extraction x index', type=int, required='--extract')
-    optionalArgs.add_argument('--ey', help='extraction y index', type=int, required='--extract')
+    extractArgs.add_argument('-l','--list', help='list variables in File and exit', action='store_true')
+    extractArgs.add_argument('-E','--extract', help='extract VAR values at certain point and exit (requires: --ix and --iy)', action='store_true')
+    extractArgs.add_argument('--getcoords', help='get coordinates for given indices and exit (requires --ix and --iy. Does not require --var or file)', action='store_true')
+    extractArgs.add_argument('--ix', help='x index (longitude)', type=int, required='--extract' in sys.argv or '--getcoords' in sys.argv)
+    extractArgs.add_argument('--iy', help='y index (latitude)', type=int, required='--extract' in sys.argv or '--getcoords' in sys.argv)
     optionalArgs.add_argument('-G','--gen', help='Meteosat Generation number (default="3")', default='3', choices=['2','3'])
     optionalArgs.add_argument('-S','--suppressfig', help='suppress opening a figure', action='store_true')
     optionalArgs.add_argument('-s','--stride', help='plot only every nth pixel (default=10)', default = 10, type=int)
@@ -38,7 +40,7 @@ def main():
     plotExtent.add_argument('--lonmax', help='maximum plot lon. extent', type=float, required='--lonmin' in sys.argv)
     plotExtent.add_argument('--latmin', help='minimum plot lat. extent', type=float, required='--latmax' in sys.argv)
     plotExtent.add_argument('--latmax', help='maximum plot lat. extent', type=float, required='--latmin' in sys.argv)
-    dataArgs.add_argument('--maxerr', help='None or percent value in [0 - 100]. Upper valid limit for ' + 
+    dataArgs.add_argument('--maxerr', help='None or percent value in [0 - 100]. Upper valid limit for ' +
                         'varname_alb_err/varname_alb*100. When above the limit, the pixels in varname_alb are removed.',
                         type=int)
     plotColors.add_argument('--vmin', help='minimum value for color scale', type=float)
@@ -50,7 +52,7 @@ def main():
                         'uses full string in title. (if string is empty, adds nothing in title)',
                         default='default')
     optionalArgs.add_argument('--is_iodc', help='if raised the geolocation and file naming are '+
-                        'considered to be those of the MSG-Indian Ocean products.', 
+                        'considered to be those of the MSG-Indian Ocean products.',
                         action='store_true')
     plotLayout.add_argument('--read_version', help='If raised activates the reading of the algorithm '+
                         'version number from the file attributes and uses it in the plot title.',
@@ -72,7 +74,7 @@ def main():
     args = vars(parser.parse_args())
 
     # check if input file exists
-    if not os.path.isfile(args['file']):
+    if not (args['file'] is None and args['getcoords']) and not os.path.isfile(args['file']):
         raise ValueError('ERROR: Input file does not exist.')
 
     if args['list'] == True:
@@ -94,20 +96,60 @@ def main():
     if args['extract'] == True:
         if args['gen'] == '3':
             import xarray as xr
-            print(f'Value at y/lat: {args["ey"]} and x/lon: {args["ex"]}')
-            print(xr.open_dataset(args['file'])[args['var']].values.squeeze()[args['ey'],args['ex']])
+            print(f'Value at y/lat: {args["iy"]} and x/lon: {args["ix"]}')
+            print(xr.open_dataset(args['file'])[args['var']].values.squeeze()[args['iy'],args['ix']])
             sys.exit()
 
-    plot_mxg_geoloc(f_in_tplt=args['file'], varname=args['var'], cfgFile = args['config'], 
-                        plot_xstep=args['stride'], plot_ystep=args['stride'], 
-                        ixmin=args['ixmin'], ixmax=args['ixmax'], iymin=args['iymin'], iymax=args['iymax'], 
+    if args['getcoords'] == True:
+        # add the location of the current directory into the python path
+        # so that the libs in ./src can be loaded even if the code is called from another location than its own directory
+        myLibDir = os.path.dirname(os.path.realpath(__file__))
+        sys.path.insert(0, myLibDir)
+        import yaml
+
+        if args['config'] is None:
+            cfgFile = os.path.join(myLibDir, 'config.yml')
+        else:
+            cfgFile = args['config']
+        cfg = yaml.safe_load(open(cfgFile))
+
+        if args['gen'] == '3':
+            import xarray as xr
+
+            if args['file'] is not None and os.path.isfile(args['file']):
+                fn = args['file']
+            else:
+                fn = cfg['lonlatFileMtg']
+
+            print(f'Coordinates at y/lat: {args["iy"]} and x/lon: {args["ix"]}')
+            print(f'LON:  {xr.open_dataset(fn)["LON"].values.squeeze()[args["iy"],args["ix"]]}')
+            print(f'LAT:  {xr.open_dataset(fn)["LAT"].values.squeeze()[args["iy"],args["ix"]]}')
+            sys.exit()
+        elif args['gen'] == '2':
+            import h5py
+
+            print(f'Coordinates at y/lat: {args["iy"]} and x/lon: {args["ix"]}')
+            lonfile = h5py.File(cfg['lonfile'],'r')
+            print(f'LON: {lonfile["LON"][args["iy"], args["ix"]]*0.0001}')
+            lonfile.close()
+            latfile = h5py.File(cfg['latfile'],'r')
+            print(f'LAT: {latfile["LAT"][args["iy"], args["ix"]]*0.0001}')
+            latfile.close()
+
+            sys.exit()
+
+
+
+    plot_mxg_geoloc(f_in_tplt=args['file'], varname=args['var'], cfgFile = args['config'],
+                        plot_xstep=args['stride'], plot_ystep=args['stride'],
+                        ixmin=args['ixmin'], ixmax=args['ixmax'], iymin=args['iymin'], iymax=args['iymax'],
                         lonmin=args['lonmin'], lonmax=args['lonmax'], latmin=args['latmin'], latmax=args['latmax'],
                         err_max_percent_lim = args['maxerr'],
-                        vmin=args['vmin'], vmax=args['vmax'], 
+                        vmin=args['vmin'], vmax=args['vmax'],
                         f_out_png=args['outfile'], qf_to_drop = args['qf_to_drop'],
-                        msg_sce=args['msg_sce'],is_iodc=args['is_iodc'], 
+                        msg_sce=args['msg_sce'],is_iodc=args['is_iodc'],
                         read_version=args['read_version'], add_logo=args['add_logo'], figsize= args['figsize'],
-                        cmap=args['cmap'], maplabels=args['maplabels'], 
+                        cmap=args['cmap'], maplabels=args['maplabels'],
                         latlinelocs = args['latlinelocs'], lonlinelocs = args['lonlinelocs'],
                         color_under=args['color_under'], color_over=args['color_over'], color_bad=args['color_bad'],
                         convertUnits = args['convert_units'],
@@ -115,29 +157,29 @@ def main():
 
 
 def plot_mxg_geoloc(f_in_tplt,
-                        varname, cfgFile = None, 
-                        plot_xstep=10, plot_ystep=10, 
-                        ixmin=None, ixmax=None, iymin=None, iymax=None, 
+                        varname, cfgFile = None,
+                        plot_xstep=10, plot_ystep=10,
+                        ixmin=None, ixmax=None, iymin=None, iymax=None,
                         lonmin=None, lonmax=None, latmin=None, latmax=None,
-                        err_max_percent_lim = 10,  
-                        vmin='min', vmax='max', 
+                        err_max_percent_lim = 10,
+                        vmin='min', vmax='max',
                         f_out_png=None, qf_to_drop = [],
-                        msg_sce='default',is_iodc=False, 
+                        msg_sce='default',is_iodc=False,
                         read_version=False, add_logo=False, figsize= None,
                         cmap='default', maplabels=False, lonlinelocs=[], latlinelocs=[],
                         color_under = 'default', color_over = 'default', color_bad = 'default',
                         convertUnits = False,
                         f_aux = None, meteosatGen = '2', suppressFig = False):
     """ Calls MSG reader for albedo, qflag & err. Apply scaling/offset, filter and remove missing data. Plot & save to PNG file the map of MSG albedo.
-    Parameters: 
+    Parameters:
         f_in_tplt: glob compatible path pointing to the input file to read. (see read_msg in pv_readers). Its basename is also used to get the date/hour of the dataset.
-        varname: variable name of the dataset to read, process and plot 
+        varname: variable name of the dataset to read, process and plot
         varname_qf: variable name of the quality flag dataset associated to varame_alb. Used for filtering with qf_to_drop
         qf_to_drop: [] or list of numeric values. The pixels in varname_alb associated to these varname_qf values are removed.
-        qf_bit_mask_ocean,missing: [] or list of int or of binary values. Used as a selection mask on da_qf bits (bitwise comparison, where results are compared with qf_bit_results). 
+        qf_bit_mask_ocean,missing: [] or list of int or of binary values. Used as a selection mask on da_qf bits (bitwise comparison, where results are compared with qf_bit_results).
         qf_bit_results_ocean,missing: [] or list of int or of binary values. Correspond to the results expected in the bitwise comparison of da_qf & qf_bit_mask.
             Ocean pixels are i) removed from data, ii) used to plot a light grey background.
-            If pixels are already flagged in the dataset, the qf_bit_mask/result_missing arguments are not needed. The missing data pixels will automatically be plotted as grey. 
+            If pixels are already flagged in the dataset, the qf_bit_mask/result_missing arguments are not needed. The missing data pixels will automatically be plotted as grey.
             If not removed already from variable dataset, use the qf_bit_mask/result_missing arguments to remove these pixels and have them plotted as grey.
             All removed data from variable that are not flagged as ocean, will be plotted in a darker grey layer.
         err_max_percent_lim: None or percent value in [0 - 100]. Upper valid limit for varname_alb_err/varname_alb*100. When above the limit, the pixels in varname_alb are removed.
@@ -151,8 +193,8 @@ def plot_mxg_geoloc(f_in_tplt,
         lonfile, latfile: Path to the longitude and latitude files to pass to the MSG geolocation reader.
         add_logo: Boolean : activate or not the addition of logos on the resulting plots
         logo_path_MF/SAF: Path to the logos to add on the figures if needed. These are used only if add_logo=True.
-        convertUnits: True or False. Converts to alternative units, only available for O3 
-        others: see in read_msg. 
+        convertUnits: True or False. Converts to alternative units, only available for O3
+        others: see in read_msg.
     """
     #import time
     #start_time = time.process_time()
@@ -165,7 +207,7 @@ def plot_mxg_geoloc(f_in_tplt,
     import copy
     import yaml
 
-    # add the location of the current directory into the python path 
+    # add the location of the current directory into the python path
     # so that the libs in ./src can be loaded even if the code is called from another location than its own directory
     myLibDir = os.path.dirname(os.path.realpath(__file__))
     sys.path.insert(0, myLibDir)
@@ -175,7 +217,7 @@ def plot_mxg_geoloc(f_in_tplt,
     from mxgplotlib import my_utils_plot
     from mxgplotlib import rebuild_lonlat
     from mxgplotlib.makeMxgPlot import makeMsgPlot, makeMtgPlot
-    
+
     # load config
     if cfgFile is None:
         cfgFile = os.path.join(myLibDir, 'config.yml')
@@ -243,7 +285,7 @@ def plot_mxg_geoloc(f_in_tplt,
     if meteosatGen == '2':
         lonfile = cfg['lonfile']
         latfile = cfg['latfile']
-    
+
     if meteosatGen == '2':
         scaling     = cfg['type'][vartype]['scaling']
         offset      = cfg['type'][vartype]['offset']
@@ -256,12 +298,12 @@ def plot_mxg_geoloc(f_in_tplt,
     varname_aux = cfg['type'][vartype]['qf_varname']
     qf_bit_mask_missing    = cfg['type'][vartype]['qf_missing']
     qf_bit_results_missing = cfg['type'][vartype]['qf_results_missing']
- 
+
     qf_bit_mask_outside_disk    = cfg['qf_bit_mask']['outside_disk']
     qf_bit_results_outside_disk = cfg['qf_bit_mask']['results_outside_disk']
     qf_bit_mask_ocean           = cfg['qf_bit_mask']['ocean']
     qf_bit_results_ocean        = cfg['qf_bit_mask']['results_ocean']
-    
+
     if isinstance(cfg['type'][vartype]['qlike'], bool):
         qlike = cfg['type'][vartype]['qlike']
 
@@ -274,7 +316,7 @@ def plot_mxg_geoloc(f_in_tplt,
         missing_data_val = None
     else:
         raise ValueError('Wrong value for missing_data_val in yml file')
-    
+
     if isinstance(cfg['type'][vartype]['missing_q_val'], (int, float)):
         missing_q_val = []
         missing_q_val.append(cfg['type'][vartype]['missing_q_val'])
@@ -301,12 +343,12 @@ def plot_mxg_geoloc(f_in_tplt,
     if qlike and vmin == 'min': vmin = cfg['type'][vartype]['vmin']
     if qlike and vmin == 'max': vmax = cfg['type'][vartype]['vmax']
 
-    if vmin    == 'default': vmin = cfg['type'][vartype]['vmin']  
-    if vmax    == 'default': vmax = cfg['type'][vartype]['vmax']  
-    if cmap    == 'default': cmap = cfg['type'][vartype]['cmap'] 
-    if color_under == 'default': color_under = cfg['type'][vartype]['color_under'] 
-    if color_over  == 'default': color_over = cfg['type'][vartype]['color_over'] 
-    if color_bad   == 'default': color_bad = cfg['type'][vartype]['color_bad'] 
+    if vmin    == 'default': vmin = cfg['type'][vartype]['vmin']
+    if vmax    == 'default': vmax = cfg['type'][vartype]['vmax']
+    if cmap    == 'default': cmap = cfg['type'][vartype]['cmap']
+    if color_under == 'default': color_under = cfg['type'][vartype]['color_under']
+    if color_over  == 'default': color_over = cfg['type'][vartype]['color_over']
+    if color_bad   == 'default': color_bad = cfg['type'][vartype]['color_bad']
     if msg_sce == 'default': msg_sce = cfg['type'][vartype]['msg_sce']
 
     logo_path_MF  = cfg['logo_path_MF']
@@ -316,7 +358,7 @@ def plot_mxg_geoloc(f_in_tplt,
     split_str = 'MSG-Disk_'
     if is_iodc: split_str = 'IODC-Disk_'
     #baseFileName = os.path
-    date = os.path.basename(f_in_tplt).split('.')[0][-12::] 
+    date = os.path.basename(f_in_tplt).split('.')[0][-12::]
     #if meteosatGen == '2':
     #    date = os.path.basename(f_in_tplt).split(split_str)[1].split('_')[0][0:12]
     #elif meteosatGen == '3':
@@ -333,7 +375,7 @@ def plot_mxg_geoloc(f_in_tplt,
             lonval, latval = rebuild_lonlat.read_msg_lonlats(fillvalue_to_nan=False,latfile=latfile,lonfile=lonfile)
         else:
             lonval, latval = rebuild_lonlat.read_msg_iodc_lonlats(fillvalue_to_nan=False,latfile=latfile,lonfile=lonfile)
- 
+
     if lonmin is not None and latmin is not None and lonmax is not None and latmax is not None:
         if meteosatGen == '3':
             lonval, latval = rebuild_lonlat.read_mtg_lonlats(cfg['lonlatFileMtg'])
@@ -343,14 +385,14 @@ def plot_mxg_geoloc(f_in_tplt,
 
     da_to_plot = da.isel(x=slice(ixmin,ixmax,plot_xstep),y=slice(iymin,iymax,plot_ystep))
     #da_to_plot = da_to_plot.fillna(-1)#.astype(np.float32)
-    
+
 
     if vartype == 'TOA':
         if f_aux is None:
             raise ValueError('no auxfile given')
 
         da_aux = utils_xr_process.read_one_file_meteosat(f_in_path=f_aux, varname = varname_aux,
-                                                         scaling=1/100., offset=0., valid_range = [0,90], 
+                                                         scaling=1/100., offset=0., valid_range = [0,90],
                                                          missing=[-20000], meteosatGen=meteosatGen)
 
         da_aux = da_aux.isel(x=slice(ixmin,ixmax,plot_xstep),y=slice(iymin,iymax,plot_ystep))
@@ -374,13 +416,13 @@ def plot_mxg_geoloc(f_in_tplt,
     ## Q-FLAG FILTERING
     # read & subsample qflag data if needed
     if vartype == 'Albedo' or vartype == 'Z_Age' or vartype == 'TOC-MSG' or vartype == 'TOC-MTG':
-        if qf_to_drop !=[] or qf_bit_mask_missing != [] or qf_bit_mask_outside_disk != [] : 
+        if qf_to_drop !=[] or qf_bit_mask_missing != [] or qf_bit_mask_outside_disk != [] :
             da_qf = utils_xr_process.read_one_file_meteosat(f_in_path=f_in_tplt, varname =
                                                  varname_aux, scaling=1,
                                                  offset=0., valid_range = [],
                                                  missing = missing_q_val, meteosatGen=meteosatGen)
 
-            da_qf = da_qf.isel(x=slice(ixmin,ixmax,plot_xstep),y=slice(iymin,iymax,plot_ystep)).astype(np.int16) 
+            da_qf = da_qf.isel(x=slice(ixmin,ixmax,plot_xstep),y=slice(iymin,iymax,plot_ystep)).astype(np.int16)
 
         # filter on qflag if needed
         if qf_to_drop != []:
@@ -388,7 +430,7 @@ def plot_mxg_geoloc(f_in_tplt,
 
         if qf_bit_mask_missing != []:
             if len(qf_bit_mask_missing) == len(qf_bit_results_missing):
-                da_to_plot = utils_xr_process.filter_bitwise_on_qflag(da_to_plot, da_qf, qf_bit_mask = qf_bit_mask_missing, 
+                da_to_plot = utils_xr_process.filter_bitwise_on_qflag(da_to_plot, da_qf, qf_bit_mask = qf_bit_mask_missing,
                                                                       qf_bit_results = qf_bit_results_missing,
                                                                       fillvalue=np.NaN)
             else:
@@ -396,15 +438,15 @@ def plot_mxg_geoloc(f_in_tplt,
 
         if qf_bit_mask_ocean != []:
             if len(qf_bit_mask_ocean) == len(qf_bit_results_ocean):
-                da_to_plot = utils_xr_process.filter_bitwise_on_qflag(da_to_plot, da_qf, qf_bit_mask = qf_bit_mask_ocean, 
+                da_to_plot = utils_xr_process.filter_bitwise_on_qflag(da_to_plot, da_qf, qf_bit_mask = qf_bit_mask_ocean,
                                                                       qf_bit_results = qf_bit_results_ocean, fillvalue=-1)
             else:
                 print('Error: qf_bit_mask & qf_bit_results lists have different lengths')
 
         # remove pixels outside mask so that the outside disk pixels remain with nan default colour (white)
         if qf_bit_mask_outside_disk != [] :
-            if (len(qf_bit_mask_outside_disk) == len(qf_bit_results_outside_disk)): 
-                da_to_plot = utils_xr_process.filter_bitwise_on_qflag(da_to_plot, da_qf, qf_bit_mask = qf_bit_mask_outside_disk, 
+            if (len(qf_bit_mask_outside_disk) == len(qf_bit_results_outside_disk)):
+                da_to_plot = utils_xr_process.filter_bitwise_on_qflag(da_to_plot, da_qf, qf_bit_mask = qf_bit_mask_outside_disk,
                                                                       qf_bit_results = qf_bit_results_outside_disk, fillvalue=np.NaN)
             else:
                 print('Error: qf_bit_mask_outside_disk & qf_bit_results_outside_disk lists have different length')
@@ -414,23 +456,23 @@ def plot_mxg_geoloc(f_in_tplt,
     else:
         da_ocean = []
 
-    ## read, subsample uncertainty, filter 
+    ## read, subsample uncertainty, filter
     if vartype == 'Albedo' and err_max_percent_lim is not None:
-        da_err = utils_xr_process.read_one_file_meteosat(f_in_path=f_in_tplt, 
+        da_err = utils_xr_process.read_one_file_meteosat(f_in_path=f_in_tplt,
                                                          varname = varname+'-ERR',
-                                                         scaling=1/10000, offset=0., 
+                                                         scaling=1/10000, offset=0.,
                                                          valid_range = [0,1], missing=[-1],
                                                          meteosatGen=meteosatGen)
         da_err = da_err.isel(x=slice(ixmin,ixmax,plot_xstep),
-                             y=slice(iymin,iymax,plot_ystep)).astype(np.float32) 
+                             y=slice(iymin,iymax,plot_ystep)).astype(np.float32)
         da_to_plot = utils_xr_process.filter_on_err(da_to_plot, da_err, err_max_percent_lim, fillvalue=-1 )
 
     # Resample values. For Q-Flags, need to re-assign values first
     if vartype == 'ALB-Q':
         # set bitwise comparison factors : "vmask" defines which bits are considered in the comparison with da_qf, "value" defines the matching bits in the comparison (1 is same, 0 is different)
         # see python bitwise operations for more info
-        vmask  = [0b11, 0b11111, 0b10100111, 0b10100111, 0b10100100, 0b10000000, 0b11] 
-        value  = [0b00, 0b00001, 0b00000101, 0b00000111, 0b00100100, 0b10000000, 0b10] 
+        vmask  = [0b11, 0b11111, 0b10100111, 0b10100111, 0b10100100, 0b10000000, 0b11]
+        value  = [0b00, 0b00001, 0b00000101, 0b00000111, 0b00100100, 0b10000000, 0b10]
         qVals = da_to_plot.copy().values # i don't know why but it is important to copy()
         for i,val in enumerate(value):
             # we re-number a new variable with contiguous values in [0, len(value)-1] for each qflag category
@@ -439,7 +481,7 @@ def plot_mxg_geoloc(f_in_tplt,
 
         if meteosatGen == '2':
             lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
-                                                         qVals, plot_xstep, plot_ystep, 
+                                                         qVals, plot_xstep, plot_ystep,
                                                          ixmin, ixmax, iymin, iymax, da_ocean)
         elif meteosatGen == '3':
             da_to_plot.values = qVals
@@ -461,7 +503,7 @@ def plot_mxg_geoloc(f_in_tplt,
                                                          ixmin, ixmax, iymin, iymax, da_ocean)
         elif meteosatGen == '3':
             da_to_plot.values = qVals
-    
+
     elif vartype == 'CMa' and meteosatGen == '2':
         qVals = da_to_plot.copy().values # get the values in a numpy array. it needs the copy(), no idea why
    #     for i,val in enumerate(value):
@@ -470,14 +512,14 @@ def plot_mxg_geoloc(f_in_tplt,
    #         qVals[mask] = i
         qVals[qVals == 0] = 5
         qVals = qVals - 1
-        
-        lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval, qVals, 
+
+        lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval, qVals,
                                                                        plot_xstep, plot_ystep,
                                                                        ixmin, ixmax, iymin, iymax, da_ocean)
     elif vartype == 'CMa-Q' and meteosatGen == '2':
         #value  = [0b000000000,0b010000000,0b100000000,0b110000000]# equiv to pvwave [  0, 128, 256, 384]
         #vmask  = [0b110000000,0b110000000,0b110000000,0b110000000]# equiv to pvwave [384, 384, 384, 384]
-        
+
         # not 100 percent sure if these are the right ones
         print('WARNING: This is still in testing, I do not think these results are correct at this time.')
         # need to figure out what bits contain the quality information here...
@@ -490,42 +532,42 @@ def plot_mxg_geoloc(f_in_tplt,
         value  = [0b000000000001, 0b000000000010, 0b000000000100,
                   0b000000001000, 0b000000010000, 0b000000011000, 0b000000100000] # [1, 2, 4, 8, 16, 24, 32]
         vmask  = [0b000000000001, 0b000000000010, 0b000000000100,
-                  0b000000111000, 0b000000111000, 0b000000111000, 0b000000111000] 
+                  0b000000111000, 0b000000111000, 0b000000111000, 0b000000111000]
         qVals = da_to_plot.copy().values # get the values in a numpy array. it needs the copy(), no idea why
         for i,val in enumerate(value):
             # we re-number a new variable with contiguous values in [0, len(value)-1] for each qflag category
             mask = np.where(da_to_plot.astype(int) & vmask[i] == val)
             qVals[mask] = i
-        
-        
+
+
         lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
-                                                         qVals, plot_xstep, plot_ystep, 
+                                                         qVals, plot_xstep, plot_ystep,
                                                          ixmin, ixmax, iymin, iymax, da_ocean)
 
     elif vartype == 'CMa-Q' and meteosatGen == '3':
-        
+
         value  = [0b000000000001, 0b000000000010, 0b000000000100,
                   0b000000001000, 0b000000010000, 0b000000011000, 0b000000100000] # [1, 2, 4, 8, 16, 24, 32]
         vmask  = [0b000000000001, 0b000000000010, 0b000000000100,
-                  0b000000111000, 0b000000111000, 0b000000111000, 0b000000111000] 
+                  0b000000111000, 0b000000111000, 0b000000111000, 0b000000111000]
         qVals = da_to_plot.copy().values # get the values in a numpy array. it needs the copy(), no idea why
         for i,val in enumerate(value):
             # we re-number a new variable with contiguous values in [0, len(value)-1] for each qflag category
             mask = np.where(da_to_plot.astype(int) & vmask[i] == val)
             qVals[mask] = i
-        
+
         da_to_plot.values = qVals
-    
+
     elif meteosatGen == '2':
         lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
-                                                         da_to_plot, plot_xstep, plot_ystep, 
+                                                         da_to_plot, plot_xstep, plot_ystep,
                                                          ixmin, ixmax, iymin, iymax, da_ocean)
     ## Plotting
     # channel dictionary
     titleString = None
     dateStr = None
     unitString = None
-    dic_channels_wl = {#'006':'0.6µm','008':'0.8µm','016':'1.6µm', 
+    dic_channels_wl = {#'006':'0.6µm','008':'0.8µm','016':'1.6µm',
                        **dict.fromkeys(['006','VIS06'], '0.6µm'),
                        **dict.fromkeys(['008','VIS08'], '0.8µm'),
                        **dict.fromkeys(['016','NIR16'], '1.6µm')}
@@ -552,7 +594,7 @@ def plot_mxg_geoloc(f_in_tplt,
         tick_labels = None
     elif vartype == 'Z_Age':
         datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]
-        titleString = f' Age of Last Observation [days] {datestr}\n {sce}' 
+        titleString = f' Age of Last Observation [days] {datestr}\n {sce}'
         # plot & customisation
         # for age variable : custom colormap with emphasis on age=0 (defined based on existing 'Purples_r')
         cmap = copy.copy(plt.get_cmap("BuPu_r",15))
@@ -588,7 +630,7 @@ def plot_mxg_geoloc(f_in_tplt,
         bname  = [ '......00', '...000.1', '0.00.101', '0.00.111', '0.1..1..', '1.......', '......10']
         colour = ["b", "yellow", "chartreuse", "skyblue", "silver", "r","w"]
         tick_labels = ['\n'.join([x,bname[i]]) for i,x in enumerate(fname) ] # merge fname & bname to legend each class
- 
+
         n_colors = len(value)
         clrmap = mcolors.ListedColormap(colour)
         plotnorm = mcolors.BoundaryNorm(np.arange(0,n_colors+1), clrmap.N)
@@ -716,13 +758,13 @@ def plot_mxg_geoloc(f_in_tplt,
     if meteosatGen == '2':
         if vmin == 'min': vmin = np.min(da_resamp)
         if vmax == 'max': vmax = np.max(da_resamp)
-        makeMsgPlot(da_resamp, lon_resamp, lat_resamp, 
-                plot_xstep=plot_xstep, plot_ystep=plot_ystep, 
-                ixmin=ixmin, ixmax=ixmax, iymin=iymin, iymax=iymax, 
+        makeMsgPlot(da_resamp, lon_resamp, lat_resamp,
+                plot_xstep=plot_xstep, plot_ystep=plot_ystep,
+                ixmin=ixmin, ixmax=ixmax, iymin=iymin, iymax=iymax,
                 lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax,
                 vmin=vmin, vmax=vmax, norm=plotnorm, f_out_png=f_out_png,
                 title=titleString, is_iodc=is_iodc, add_logo=add_logo,
-                logo_path_MF=logo_path_MF, logo_path_SAF = logo_path_SAF, 
+                logo_path_MF=logo_path_MF, logo_path_SAF = logo_path_SAF,
                 figsize=figsize, cmap=clrmap, tick_labels=tick_labels, suppressFig=suppressFig,
                 mapLabels=maplabels, lonlinelocs=lonlinelocs, latlinelocs=latlinelocs)
     elif meteosatGen == '3':
@@ -732,7 +774,7 @@ def plot_mxg_geoloc(f_in_tplt,
                  lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax,
                  vmin=vmin, vmax=vmax, norm=plotnorm, f_out_png=f_out_png,
                  title=titleString,is_iodc=is_iodc, add_logo=add_logo,
-                 logo_path_MF=logo_path_MF, logo_path_SAF = logo_path_SAF, 
+                 logo_path_MF=logo_path_MF, logo_path_SAF = logo_path_SAF,
                  figsize=figsize,cmap=clrmap, cTickLabels=tick_labels,
                  mapLabels=maplabels, suppressFig=suppressFig, units=unitString,
                  lonlinelocs=lonlinelocs, latlinelocs=latlinelocs)
