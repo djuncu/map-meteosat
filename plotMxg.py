@@ -232,8 +232,10 @@ def plot_mxg_geoloc(f_in_tplt,
     elif varname == 'AOD-FC':
         vartype = varname
         varname = 'AOD550'
-    elif varname == 'AOD550':
+    elif varname == 'AOD550' and meteosatGen == '2':
         vartype = 'AOD-FC'
+    elif varname == 'AOD550' and meteosatGen == '3':
+        vartype = 'AOD-CLIM'
     elif varname == 'BRF-TOC' and meteosatGen == '2':
         vartype = 'TOC-MSG'
     elif varname == 'BRF-TOC' and meteosatGen == '3':
@@ -278,6 +280,8 @@ def plot_mxg_geoloc(f_in_tplt,
         vartype = 'SA'
     elif varname == 'msl':
         vartype = 'MSL'
+    elif varname == 'LWMASK':
+        vartype = 'LWMASK'
     else:
         vartype = varname
 
@@ -558,6 +562,9 @@ def plot_mxg_geoloc(f_in_tplt,
 
         da_to_plot.values = qVals
 
+    elif vartype == 'LWMASK':
+        da_to_plot = da_to_plot.astype(int)
+
     elif meteosatGen == '2':
         lon_resamp, lat_resamp, da_resamp = my_utils_plot.resampleMesh(lonval, latval,
                                                          da_to_plot, plot_xstep, plot_ystep,
@@ -673,8 +680,24 @@ def plot_mxg_geoloc(f_in_tplt,
         clrmap = mcolors.ListedColormap(colour)
         plotnorm = mcolors.BoundaryNorm(np.arange(0,n_colors+1), clrmap.N)
 
+    elif vartype == 'LWMASK':
+        datestr = date[0:4]+'-'+date[4:6]+'-'+date[6:8]+' '+date[8:10]+':'+date[10:12]+' UTC'
+        titleString = f'Land Water Mask\n {datestr}'
+        fname  = ['Water', 'Land', 'missing data', 'Inland Water']
+        colour = ['navy','forestgreen','firebrick','deepskyblue']
+        bname  = ['', '','','']
+        tick_labels = ['\n'.join([x,bname[i]]) for i,x in enumerate(fname) ] # merge fname & bname to legend each class
+
+        n_colors = 4
+        clrmap = mcolors.ListedColormap(colour)
+        plotnorm = mcolors.BoundaryNorm(np.arange(0,n_colors+1), clrmap.N)
     else:
-        clrmap = copy.copy(plt.get_cmap(cmap))
+        try:
+            clrmap = copy.copy(plt.get_cmap(cmap))
+        except:
+            cmData = np.loadtxt(os.path.join('colormaps', cmap + '.rgb'))
+            clrmap = mcolors.ListedColormap(cmData)
+
         if color_under is not None: clrmap.set_under(color_under) # plot data < vmin in grey.
         if color_over is not None: clrmap.set_over(color_over) # plot data > vmax in white.
         if color_bad is not None: clrmap.set_bad(color_bad)

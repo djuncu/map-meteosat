@@ -3,11 +3,11 @@ type:
         qf_varname: Q-Flag
         qlike: False
         vmin: 0
-        vmax: 0.5
-        cmap: 'viridis'
+        vmax: 0.6
+        cmap: 'cubehelix'
         color_under: 'lightgray'
         color_over: 'white'
-        color_bad: null
+        color_bad: 'lightgray'
         qf_missing: [0b11111,0b10000000]
         qf_results_missing: [0b00001,0b10000000]
         scaling: 1.e-4
@@ -130,6 +130,25 @@ type:
         msg_sce: default
         missing_data_val: -1
         missing_q_val: -1 
+        conversion: 
+            factor: null
+    LWMASK:
+        qf_varname: null
+        qlike: True
+        vmin: null
+        vmax: null
+        cmap: null
+        color_under: null
+        color_over: null
+        color_bad: null
+        qf_missing: null
+        qf_results_missing: null
+        scaling: 1
+        offset: 0.
+        valid_range: [] 
+        msg_sce: default
+        missing_data_val: [] 
+        missing_q_val: null
         conversion: 
             factor: null
     MSL:

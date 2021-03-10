@@ -48,9 +48,13 @@ def read_one_file_meteosat(f_in_path, varname, scaling, offset=0., valid_range =
                                                    offset=offset,
                                                    valid_range= valid_range,
                                                    missing=missing)
-        da[varname] = da[varname].squeeze()
+        if 'time' in da[varname].dims:
+            # change this by adding an option for which time slot to choose!
+            da[varname] = da.isel(time=0)[varname]
+
         if da[varname].dims[0] != 'y':
             da[varname] = da[varname].rename({da[varname].dims[0]:'y', da[varname].dims[1]:'x'})
+
         da = da[varname]
 
     return da
