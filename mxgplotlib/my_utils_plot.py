@@ -90,9 +90,12 @@ def lonlat2indexLims(lonvals, latvals, lonmin, lonmax, latmin, latmax):
             xy = wgs2local(np.hstack((lonvals_r[nhMask, None], latvals_r[nhMask, None])),
                                  [lonlims[i], latlims[j]])
             dist = np.sqrt(np.sum(xy**2,1))
-
-            iLat[k], iLon[k] = np.unravel_index(maskedIndexArray[np.argmin(dist)],
+           
+            try:
+                iLat[k], iLon[k] = np.unravel_index(maskedIndexArray[np.argmin(dist)],
                                                     lonvals.shape)
+            except: 
+                raise ValueError('ERROR converting lat/lon limits to indices. One limit might be out of map boundaries?')
             k += 1
 
     iLonMin = np.min((iLon[0], iLon[1]))

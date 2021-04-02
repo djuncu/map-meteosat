@@ -132,6 +132,40 @@ type:
         missing_q_val: -1 
         conversion: 
             factor: null
+    LAT:
+        qf_varname: ''
+        qlike: False
+        cmap: 'viridis'
+        color_under: lightgray
+        color_over: null
+        color_bad: lightgray
+        offset: 0.
+        scaling: 1.e-4
+        valid_range: []
+        msg_sce: ''
+        qf_missing: null
+        qf_results_missing: null
+        missing_data_val: -8000
+        missing_q_val: null
+        conversion: 
+            factor: null
+    LON:
+        qf_varname: ''
+        qlike: False
+        cmap: 'viridis'
+        color_under: lightgray
+        color_over: null
+        color_bad: lightgray
+        offset: 0.
+        scaling: 1.e-4
+        valid_range: []
+        msg_sce: ''
+        qf_missing: null
+        qf_results_missing: null
+        missing_data_val: -8000
+        missing_q_val: null
+        conversion: 
+            factor: null
     LWMASK:
         qf_varname: null
         qlike: True

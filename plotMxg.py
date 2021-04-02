@@ -20,13 +20,16 @@ def main():
     dataArgs   = parser.add_argument_group('(optional) data modifiers')
     fileNames  = parser.add_argument_group('(optional) files')
     parser.add_argument('file', type=str, help='Input file name', nargs='?')
-    requiredArgs.add_argument('-V','--var', help='variable to plot', required='--list' not in sys.argv and '-l' not in sys.argv and '--getcoords' not in sys.argv)
+    requiredArgs.add_argument('-V','--var', help='variable to plot', required='--list' not in sys.argv and '-l' not in sys.argv and '--getcoords' not in sys.argv and '--getindex' not in sys.argv)
     optionalArgs.add_argument('-h', '--help', action='help', help='show this help message and exit')
     extractArgs.add_argument('-l','--list', help='list variables in File and exit', action='store_true')
     extractArgs.add_argument('-E','--extract', help='extract VAR values at certain point and exit (requires: --ix and --iy)', action='store_true')
     extractArgs.add_argument('--getcoords', help='get coordinates for given indices and exit (requires --ix and --iy. Does not require --var or file)', action='store_true')
     extractArgs.add_argument('--ix', help='x index (longitude)', type=int, required='--extract' in sys.argv or '--getcoords' in sys.argv)
     extractArgs.add_argument('--iy', help='y index (latitude)', type=int, required='--extract' in sys.argv or '--getcoords' in sys.argv)
+    extractArgs.add_argument('--getindex', help='get indices for given coordinates and exit (requires --ix and --iy. Does not require --var or file)', action='store_true')
+    extractArgs.add_argument('--lon', help='longitude', type=float, required='--getindex' in sys.argv)
+    extractArgs.add_argument('--lat', help='latitude', type=float, required='--getindex' in sys.argv)
     optionalArgs.add_argument('-G','--gen', help='Meteosat Generation number (default="3")', default='3', choices=['2','3'])
     optionalArgs.add_argument('-S','--suppressfig', help='suppress opening a figure', action='store_true')
     optionalArgs.add_argument('-s','--stride', help='plot only every nth pixel (default=10)', default = 10, type=int)
@@ -71,10 +74,11 @@ def main():
     fileNames.add_argument('--auxfile', help='auxiliary file for TOA, needed for conversion from radiance to reflectance')
     dataArgs.add_argument('--qf_to_drop', help='[] or list of numeric values. The pixels in varname_alb '+
                         'associated to these varname_qf values are removed.', nargs='+', default=[])
+    dataArgs.add_argument('--no_q_filtering', help='disable fitlering by Q flag ', action='store_true')
     args = vars(parser.parse_args())
 
     # check if input file exists
-    if not (args['file'] is None and args['getcoords']) and not os.path.isfile(args['file']):
+    if not (args['file'] is None and (args['getcoords'] or args['getindex'])) and not os.path.isfile(args['file']):
         raise ValueError('ERROR: Input file does not exist.')
 
     if args['list'] == True:
@@ -94,7 +98,13 @@ def main():
             sys.exit()
 
     if args['extract'] == True:
-        if args['gen'] == '3':
+        if args['gen'] == '2':
+            import h5py
+            with h5py.File(args['file'], 'r') as inFile:
+                print(f'Value at y/lat: {args["iy"]} and x/lon: {args["ix"]}')
+                print(inFile[args['var']][args['iy'], args['ix']])
+            sys.exit()
+        elif args['gen'] == '3':
             import xarray as xr
             print(f'Value at y/lat: {args["iy"]} and x/lon: {args["ix"]}')
             print(xr.open_dataset(args['file'])[args['var']].values.squeeze()[args['iy'],args['ix']])
@@ -138,7 +148,23 @@ def main():
 
             sys.exit()
 
+    if args['getindex'] == True:
+        import yaml
+        # add the location of the current directory into the python path
+        # so that the libs in ./src can be loaded even if the code is called from another location than its own directory
+        myLibDir = os.path.dirname(os.path.realpath(__file__))
+        sys.path.insert(0, myLibDir)
 
+        if args['config'] is None:
+            cfgFile = os.path.join(myLibDir, 'config.yml')
+        else:
+            cfgFile = args['config']
+
+        cfg = yaml.safe_load(open(cfgFile))
+
+        from mxgplotlib import extractionUtils
+        extractionUtils.getIndex(cfg, args['file'], args['lon'], args['lat'], args['gen'])
+        sys.exit()
 
     plot_mxg_geoloc(f_in_tplt=args['file'], varname=args['var'], cfgFile = args['config'],
                         plot_xstep=args['stride'], plot_ystep=args['stride'],
@@ -146,7 +172,7 @@ def main():
                         lonmin=args['lonmin'], lonmax=args['lonmax'], latmin=args['latmin'], latmax=args['latmax'],
                         err_max_percent_lim = args['maxerr'],
                         vmin=args['vmin'], vmax=args['vmax'],
-                        f_out_png=args['outfile'], qf_to_drop = args['qf_to_drop'],
+                        f_out_png=args['outfile'], qf_to_drop = args['qf_to_drop'], q_filtering= not args['no_q_filtering'],
                         msg_sce=args['msg_sce'],is_iodc=args['is_iodc'],
                         read_version=args['read_version'], add_logo=args['add_logo'], figsize= args['figsize'],
                         cmap=args['cmap'], maplabels=args['maplabels'],
@@ -163,7 +189,7 @@ def plot_mxg_geoloc(f_in_tplt,
                         lonmin=None, lonmax=None, latmin=None, latmax=None,
                         err_max_percent_lim = 10,
                         vmin='min', vmax='max',
-                        f_out_png=None, qf_to_drop = [],
+                        f_out_png=None, qf_to_drop = [], q_filtering = True,
                         msg_sce='default',is_iodc=False,
                         read_version=False, add_logo=False, figsize= None,
                         cmap='default', maplabels=False, lonlinelocs=[], latlinelocs=[],
@@ -419,7 +445,7 @@ def plot_mxg_geoloc(f_in_tplt,
 
     ## Q-FLAG FILTERING
     # read & subsample qflag data if needed
-    if vartype == 'Albedo' or vartype == 'Z_Age' or vartype == 'TOC-MSG' or vartype == 'TOC-MTG':
+    if q_filtering and (vartype == 'Albedo' or vartype == 'Z_Age' or vartype == 'TOC-MSG' or vartype == 'TOC-MTG'):
         if qf_to_drop !=[] or qf_bit_mask_missing != [] or qf_bit_mask_outside_disk != [] :
             da_qf = utils_xr_process.read_one_file_meteosat(f_in_path=f_in_tplt, varname =
                                                  varname_aux, scaling=1,
