@@ -2,6 +2,30 @@ import numpy as np
 import os
 from mxgplotlib.MapProj import wgs2local
 
+def getCoords(cfg, lonlatFileName, ix, iy, gen_):
+    if gen_ == '3':
+        import xarray as xr
+
+        if lonlatFileName is not None and os.path.isfile(lonlatFileName):
+            fn = lonlatFileName
+        else:
+            fn = cfg['lonlatFileMtg']
+
+        lon = xr.open_dataset(fn)['LON'].isel(time=0).values[iy, ix]
+        lat = xr.open_dataset(fn)['LAT'].isel(time=0).values[iy, ix]
+
+    elif gen_ == '2':
+        import h5py
+
+        with h5py.File(cfg['lonfile'], 'r') as lonFileContent:
+            lon = lonFileContent['LON'][iy, ix] / lonFileContent['LON'].attrs.get('SCALING_FACTOR')
+        with h5py.File(cfg['latfile'], 'r') as latFileContent:
+            lat = latFileContent['LAT'][iy, ix] / latFileContent['LAT'].attrs.get('SCALING_FACTOR')
+
+    print(f'Coordinates at y/lat: {iy} and x/lon: {ix}')
+    print(f'LON:  {lon}')
+    print(f'LAT:  {lat}')
+
 def getIndex(cfg, lonlatFileName, lonval, latval, gen_):
     """ get index of coordinates based on coordinates lonval and latval
     """

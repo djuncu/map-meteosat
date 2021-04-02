@@ -123,30 +123,9 @@ def main():
             cfgFile = args['config']
         cfg = yaml.safe_load(open(cfgFile))
 
-        if args['gen'] == '3':
-            import xarray as xr
-
-            if args['file'] is not None and os.path.isfile(args['file']):
-                fn = args['file']
-            else:
-                fn = cfg['lonlatFileMtg']
-
-            print(f'Coordinates at y/lat: {args["iy"]} and x/lon: {args["ix"]}')
-            print(f'LON:  {xr.open_dataset(fn)["LON"].values.squeeze()[args["iy"],args["ix"]]}')
-            print(f'LAT:  {xr.open_dataset(fn)["LAT"].values.squeeze()[args["iy"],args["ix"]]}')
-            sys.exit()
-        elif args['gen'] == '2':
-            import h5py
-
-            print(f'Coordinates at y/lat: {args["iy"]} and x/lon: {args["ix"]}')
-            lonfile = h5py.File(cfg['lonfile'],'r')
-            print(f'LON: {lonfile["LON"][args["iy"], args["ix"]]*0.0001}')
-            lonfile.close()
-            latfile = h5py.File(cfg['latfile'],'r')
-            print(f'LAT: {latfile["LAT"][args["iy"], args["ix"]]*0.0001}')
-            latfile.close()
-
-            sys.exit()
+        from mxgplotlib import extractionUtils
+        extractionUtils.getCoords(cfg, args['file'], args['ix'], args['iy'], args['gen'])
+        sys.exit()
 
     if args['getindex'] == True:
         import yaml
