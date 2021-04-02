@@ -27,7 +27,7 @@ def main():
     extractArgs.add_argument('--getcoords', help='get coordinates for given indices and exit (requires --ix and --iy. Does not require --var or file)', action='store_true')
     extractArgs.add_argument('--ix', help='x index (longitude)', type=int, required='--extract' in sys.argv or '--getcoords' in sys.argv)
     extractArgs.add_argument('--iy', help='y index (latitude)', type=int, required='--extract' in sys.argv or '--getcoords' in sys.argv)
-    extractArgs.add_argument('--getindex', help='get indices for given coordinates and exit (requires --ix and --iy. Does not require --var or file)', action='store_true')
+    extractArgs.add_argument('--getindex', help='get indices for given coordinates and exit (requires --lon and --lat. Does not require --var or file)', action='store_true')
     extractArgs.add_argument('--lon', help='longitude', type=float, required='--getindex' in sys.argv)
     extractArgs.add_argument('--lat', help='latitude', type=float, required='--getindex' in sys.argv)
     optionalArgs.add_argument('-G','--gen', help='Meteosat Generation number (default="3")', default='3', choices=['2','3'])
@@ -98,17 +98,16 @@ def main():
             sys.exit()
 
     if args['extract'] == True:
+        print(f'Value at y/lat: {args["iy"]} and x/lon: {args["ix"]}')
         if args['gen'] == '2':
             import h5py
             with h5py.File(args['file'], 'r') as inFile:
-                print(f'Value at y/lat: {args["iy"]} and x/lon: {args["ix"]}')
                 print(inFile[args['var']][args['iy'], args['ix']])
-            sys.exit()
         elif args['gen'] == '3':
             import xarray as xr
-            print(f'Value at y/lat: {args["iy"]} and x/lon: {args["ix"]}')
             print(xr.open_dataset(args['file'])[args['var']].values.squeeze()[args['iy'],args['ix']])
-            sys.exit()
+
+        sys.exit()
 
     if args['getcoords'] == True:
         # add the location of the current directory into the python path
