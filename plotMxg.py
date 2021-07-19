@@ -33,6 +33,8 @@ def main():
     optionalArgs.add_argument('-G','--gen', help='Meteosat Generation number (default="3")', default='3', choices=['2','3'])
     optionalArgs.add_argument('-S','--suppressfig', help='suppress opening a figure', action='store_true')
     optionalArgs.add_argument('-s','--stride', help='plot only every nth pixel (default=10)', default = 10, type=int)
+    optionalArgs.add_argument('-d','--diff', help='plot difference between two files', action='store_true', required='--file2' in sys.argv)
+    optionalArgs.add_argument('--file2', help='2nd file for difference calculation', type=str, required='--diff' in sys.argv)
     fileNames.add_argument('-c', '--config', help='name of config file')
     plotLayout.add_argument('--figsize', help='figure width, height in inches', nargs = 2, type=float, metavar = ('WIDTH','HEIGHT'))
     plotExtent.add_argument('--ixmin', help='minimum plot x-extent py pixel', type=int, required='--ixmax' in sys.argv)
@@ -144,20 +146,23 @@ def main():
         extractionUtils.getIndex(cfg, args['file'], args['lon'], args['lat'], args['gen'])
         sys.exit()
 
-    plot_mxg_geoloc(f_in_tplt=args['file'], varname=args['var'], cfgFile = args['config'],
-                        plot_xstep=args['stride'], plot_ystep=args['stride'],
-                        ixmin=args['ixmin'], ixmax=args['ixmax'], iymin=args['iymin'], iymax=args['iymax'],
-                        lonmin=args['lonmin'], lonmax=args['lonmax'], latmin=args['latmin'], latmax=args['latmax'],
-                        err_max_percent_lim = args['maxerr'],
-                        vmin=args['vmin'], vmax=args['vmax'],
-                        f_out_png=args['outfile'], qf_to_drop = args['qf_to_drop'], q_filtering= not args['no_q_filtering'],
-                        msg_sce=args['msg_sce'],is_iodc=args['is_iodc'],
-                        read_version=args['read_version'], add_logo=args['add_logo'], figsize= args['figsize'],
-                        cmap=args['cmap'], maplabels=args['maplabels'],
-                        latlinelocs = args['latlinelocs'], lonlinelocs = args['lonlinelocs'],
-                        color_under=args['color_under'], color_over=args['color_over'], color_bad=args['color_bad'],
-                        convertUnits = args['convert_units'],
-                        f_aux = args['auxfile'], meteosatGen = args['gen'], suppressFig = args['suppressfig'])
+    plot_mxg_geoloc(
+        f_in_tplt=args['file'], varname=args['var'], cfgFile = args['config'],
+        plot_xstep=args['stride'], plot_ystep=args['stride'],
+        ixmin=args['ixmin'], ixmax=args['ixmax'], iymin=args['iymin'], iymax=args['iymax'],
+        lonmin=args['lonmin'], lonmax=args['lonmax'], latmin=args['latmin'], latmax=args['latmax'],
+        err_max_percent_lim = args['maxerr'],
+        vmin=args['vmin'], vmax=args['vmax'],
+        f_out_png=args['outfile'], qf_to_drop = args['qf_to_drop'], q_filtering= not args['no_q_filtering'],
+        msg_sce=args['msg_sce'],is_iodc=args['is_iodc'],
+        read_version=args['read_version'], add_logo=args['add_logo'], figsize= args['figsize'],
+        cmap=args['cmap'], maplabels=args['maplabels'],
+        latlinelocs = args['latlinelocs'], lonlinelocs = args['lonlinelocs'],
+        color_under=args['color_under'], color_over=args['color_over'], color_bad=args['color_bad'],
+        convertUnits = args['convert_units'],
+        f_aux=args['auxfile'], meteosatGen=args['gen'], suppressFig=args['suppressfig'],
+        do_difference=args['diff'], file2=args['file2']
+    )
 
 
 def plot_mxg_geoloc(f_in_tplt,
@@ -173,7 +178,8 @@ def plot_mxg_geoloc(f_in_tplt,
                         cmap='default', maplabels=False, lonlinelocs=[], latlinelocs=[],
                         color_under = 'default', color_over = 'default', color_bad = 'default',
                         convertUnits = False,
-                        f_aux = None, meteosatGen = '2', suppressFig = False):
+                        f_aux = None, meteosatGen = '2', suppressFig = False,
+                    do_difference=False, file2=''):
     """ Calls MSG reader for albedo, qflag & err. Apply scaling/offset, filter and remove missing data. Plot & save to PNG file the map of MSG albedo.
     Parameters:
         f_in_tplt: glob compatible path pointing to the input file to read. (see read_msg in pv_readers). Its basename is also used to get the date/hour of the dataset.
@@ -286,6 +292,8 @@ def plot_mxg_geoloc(f_in_tplt,
         vartype = 'MSL'
     elif varname == 'LWMASK':
         vartype = 'LWMASK'
+    elif varname[0] == 'K' and varname[1].isdigit():
+        vartype = 'BRDF'
     else:
         vartype = varname
 
@@ -295,9 +303,9 @@ def plot_mxg_geoloc(f_in_tplt,
         latfile = cfg['latfile']
 
     if meteosatGen == '2':
-        scaling     = cfg['type'][vartype]['scaling']
-        offset      = cfg['type'][vartype]['offset']
-        valid_range = cfg['type'][vartype]['valid_range']
+        scaling     = cfg['type'][vartype].get('scaling', 1)
+        offset      = cfg['type'][vartype].get('offset', 0)
+        valid_range = cfg['type'][vartype].get('valid_range', [])
     elif meteosatGen == '3':
         scaling = 1.
         offset  = 0.
@@ -376,6 +384,16 @@ def plot_mxg_geoloc(f_in_tplt,
                                                  offset=offset, valid_range =
                                                  valid_range,
                                                  missing=missing_data_val, meteosatGen=meteosatGen)
+
+    if do_difference:
+        da2 = utils_xr_process.read_one_file_meteosat(
+            f_in_path=file2, varname=varname, scaling=scaling,
+            offset=offset, valid_range=valid_range,
+            missing=missing_data_val, meteosatGen=meteosatGen)
+        print(np.nanmax(da.values))
+        print(np.nanmax(da2.values))
+        da.values = da2.values - da.values # * 1e4
+        print(np.nanmax(da.values))
 
     # adding geoloc coordinates to dataset
     if meteosatGen == '2':
@@ -474,6 +492,14 @@ def plot_mxg_geoloc(f_in_tplt,
         da_err = da_err.isel(x=slice(ixmin,ixmax,plot_xstep),
                              y=slice(iymin,iymax,plot_ystep)).astype(np.float32)
         da_to_plot = utils_xr_process.filter_on_err(da_to_plot, da_err, err_max_percent_lim, fillvalue=-1 )
+
+    # calculate mean, std for difference
+    if do_difference:
+        # since we already have the difference, MBE is just mean of the difference (right?)
+        print(f'Mean Absolute Error: {np.nanmean(np.abs(da_to_plot.values)):.4f}')
+        print(f'Mean Bias Error: {np.nanmean(da_to_plot.values):.4f}')
+        print(f'Mean Square Error: {np.nanmean(da_to_plot.values**2):.4f}')
+        #print(np.nanmin(da_to_plot))
 
     # Resample values. For Q-Flags, need to re-assign values first
     if vartype == 'ALB-Q':
@@ -781,6 +807,9 @@ def plot_mxg_geoloc(f_in_tplt,
         elif varname == 'SZA':
             titleString = f'Solar Zenith Angle\n{datestr} {sce}'
         unitString = 'degrees'
+
+    if do_difference:
+        titleString = 'Difference ' + titleString
 
     if meteosatGen == '2':
         if vmin == 'min': vmin = np.min(da_resamp)

@@ -93,7 +93,7 @@ def makeMsgPlot(val, lon, lat,
     else: # saves the map to a png file, no info is returned
         f_out_png = os.path.expanduser(f_out_png)
         my_utils_plot.ensure_dir(f_out_png)
-        plt.savefig(f_out_png)
+        plt.savefig(f_out_png, bbox_extra_artists=(cb,))
         plt.close()
         print('Plotting finished. File saved to ' + f_out_png)
 
